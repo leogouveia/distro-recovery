@@ -83,6 +83,11 @@ def test_group_package_in_no_known_group_needs_review():
     check(pkg("mystery", Reason.GROUP), ctx(), R, C.USER_UNCONFIRMED)
 
 
+def test_group_package_of_unknown_group_that_came_with_the_image_is_baseline():
+    h = UserHistory(frozenset({1}), {}, frozenset({"lvm2"}))
+    check(pkg("lvm2", Reason.GROUP), ctx(history=h), X, C.BASELINE)
+
+
 def test_user_history():
     h = UserHistory(frozenset({1}), {"vlc": frozenset({44})})
     check(pkg("vlc"), ctx(history=h), H, C.USER_HISTORY)

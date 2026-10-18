@@ -81,6 +81,8 @@ def _decide(pkg: InstalledPkg, ctx: Context) -> Classified:
         for g in sorted(ctx.groups, key=lambda g: g.id):
             if g.id not in ctx.baseline.groups and name in g.packages:
                 return out(X, ReasonCode.VIA_GROUP, g.id)
+        if name in ctx.history.image_packages:
+            return out(X, ReasonCode.BASELINE)  # grupo da imagem de instalação
         # veio de um grupo que não conhecemos (removido?): não dá para cobrir nem descartar
         return out(R, ReasonCode.USER_UNCONFIRMED)
 
