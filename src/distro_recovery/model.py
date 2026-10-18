@@ -116,3 +116,11 @@ def parse_nevra(nevra: str) -> Nevra:
     if m is None:
         raise ValueError(f"nevra inválido: {nevra!r}")
     return Nevra(**m.groupdict())
+
+
+@dataclass(frozen=True)
+class UserHistory:
+    """Transações do histórico que instalaram pacotes com reason=User."""
+
+    first_tx_id: int
+    installs: dict[str, frozenset[int]]  # nome -> ids das transações

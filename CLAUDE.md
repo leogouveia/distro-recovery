@@ -97,6 +97,20 @@ runner injetável (testes usam fixtures).
 - Nunca rodar dnf5 sem `-C --assumeno` na coleta: sem cache ele pode pedir importação de
   chave GPG (alteraria o chaveiro).
 
+- `dnf5 leaves`: além de `- nevra`, imprime membros de ciclos de dependência só indentados
+  (`  nevra`); ambos são leaves. Pacotes multi-versão (kernel) repetem o nome.
+- Tabelas de `group/environment list`: a coluna ID pode ficar a UM espaço do nome; parsear
+  com regex (`ID  nome  yes|no`), não por 2+ espaços.
+- `.repo` duplicados: o mesmo id pode estar em 2 arquivos (ex.: `vivaldi.repo` e
+  `fedora-recovery-vivaldi.repo`). Regra: preferir o que tem gpgkey remota (não `file://`),
+  depois a ordem do `ls`; emitir warning `duplicate_repo_id`.
+- `.repo` pertencente a um pacote que não é `*-release` nem `fedora-*` (ex.: `chatgpt`)
+  -> kind `repofile` com `package` e warning `owned_by_package`.
+- Fingerprints GPG: só dá para obter o fingerprint quando ele está no nome do arquivo da
+  chave; para URLs remotas ficam vazios (só `gpgkey_urls`), pois não há acesso à rede.
+- `fedora-workstation-repositories` distribui google-chrome, rpmfusion-nonfree-* e o copr
+  do PyCharm (kind `third-party`, `package` = dono). Os copr:* sem dono são `copr`.
+
 Baseline (Fase 1): grupos/ambientes da edição instalada (mandatory + default) + regras
 fixas: `kernel*`, `kmod-*` versionados (manter `akmod-*`), `*-firmware`, `glibc-langpack-*`,
 `anaconda*`, quem fornece `system-release`, protegidos. Simulação `--installroot` = Fase 3.
