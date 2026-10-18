@@ -11,7 +11,7 @@ CPUS=2
 DISK=20G
 DATA="$REPO_ROOT/tests/vm/smoke"
 KEEP=0
-VERBOSE=0
+VERBOSE=1
 KVM=auto
 REFRESH=0
 CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/distro-recovery-vm"
@@ -28,7 +28,8 @@ Uso: scripts/vm-test.sh [opções]
   --memory MB     Memória da VM (padrão: $MEMORY)
   --cpus N        CPUs da VM (padrão: $CPUS)
   --no-kvm        Não usa KVM (muito mais lento)
-  --verbose       Mostra a saída dos comandos da VM numa caixa que rola no lugar
+  --quiet, -q     Não mostra a saída dos comandos da VM (por padrão ela aparece numa caixa
+                  de 10 linhas que rola no lugar, sem encher a tela)
   --keep          Mantém a VM ligada ao final e mostra como entrar (ssh) e desligar
   --refresh-image Baixa a imagem base de novo
   --cache-dir DIR Onde guardar a imagem baixada (padrão: $CACHE_DIR)
@@ -55,7 +56,8 @@ while [ $# -gt 0 ]; do
         --cache-dir) CACHE_DIR=${2:?--cache-dir precisa de um valor}; shift 2 ;;
         --no-kvm) KVM=off; shift ;;
         --keep) KEEP=1; shift ;;
-        --verbose | -v) VERBOSE=1; shift ;;
+        --quiet | -q) VERBOSE=0; shift ;;
+        --verbose | -v) VERBOSE=1; shift ;;  # já é o padrão; mantido por compatibilidade
         --refresh-image) REFRESH=1; shift ;;
         -h | --help) usage; exit 0 ;;
         *) usage >&2; die "opção desconhecida: $1" ;;
@@ -232,7 +234,7 @@ vm 'sudo cloud-init status --wait >/dev/null 2>&1 || true'
 log "enviando a ferramenta, os dados e o roteiro de testes"
 copy_to_vm "$WORK/dist" "$WORK/data" "$REPO_ROOT/tests/vm/guest.sh"
 
-# Caixa de altura fixa que rola no lugar (só com --verbose)
+# Caixa de altura fixa que rola no lugar (padrão; desligue com --quiet)
 box() { python3 "$REPO_ROOT/scripts/rolling_box.py" --lines 10 "$@"; }
 
 log "preparando a VM (instala ansible, a ferramenta e dependências)"

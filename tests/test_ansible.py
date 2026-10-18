@@ -121,3 +121,63 @@ def test_syntax_check_passes(tmp_path):
         check=False,
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
+
+
+def _run_repos_role(tmp_path, reposdir, repos):
+    play = tmp_path / "play.yml"
+    play.write_text(
+        "- hosts: localhost\n  connection: local\n  gather_facts: false\n  roles: [repos]\n"
+    )
+    vars_file = tmp_path / "vars.yml"
+    vars_file.write_text(
+        "dr_family: fedora\ndr_groups: []\ndr_packages: []\ndr_swaps: []\n"
+        f"dr_repo_dir: {reposdir}\ndr_repos:\n"
+        + "".join(
+            f"  - id: {i}\n    kind: repofile\n    name: {i}\n    baseurl: https://example.org/{i}\n"
+            for i in repos
+        )
+    )
+    return subprocess.run(
+        ["ansible-playbook", "-i", "localhost,", "-e", f"@{vars_file}", str(play)],
+        capture_output=True,
+        text=True,
+        env={
+            **os.environ,
+            "ANSIBLE_ROLES_PATH": str(ANSIBLE / "roles"),
+            "ANSIBLE_HOME": str(tmp_path / "home"),
+            "ANSIBLE_LOCAL_TEMP": str(tmp_path / "tmp"),
+            "ANSIBLE_NOCOLOR": "1",
+        },
+        check=False,
+    )
+
+
+@pytest.mark.skipif(not _collection_available(), reason="ansible-core + community.general ausentes")
+def test_repos_role_never_rewrites_a_repo_that_a_file_already_defines(tmp_path):
+    # O pacote do Vivaldi reescreve o próprio vivaldi.repo ao ser instalado; se o playbook
+    # o redefinisse, a segunda execução apareceria como "changed" (e brigaria com o pacote).
+    reposdir = tmp_path / "repos"
+    reposdir.mkdir()
+    vendor = "[vivaldi]\nname=vivaldi\nbaseurl=https://x/y\nenabled=1\ngpgcheck=1\n# do pacote\n"
+    (reposdir / "vivaldi.repo").write_text(vendor)
+
+    first = _run_repos_role(tmp_path, reposdir, ["vivaldi", "novo"])
+    assert first.returncode == 0, first.stdout + first.stderr
+    assert (reposdir / "vivaldi.repo").read_text() == vendor
+    created = (reposdir / "novo.repo").read_text()
+    assert "[novo]" in created and "gpgcheck = 1" in created  # novo repo: assinatura ligada
+
+    second = _run_repos_role(tmp_path, reposdir, ["vivaldi", "novo"])
+    assert second.returncode == 0, second.stdout + second.stderr
+    assert "changed=0" in second.stdout
+    assert (reposdir / "vivaldi.repo").read_text() == vendor
+
+
+@pytest.mark.skipif(not _collection_available(), reason="ansible-core + community.general ausentes")
+def test_repos_role_skips_ids_defined_under_a_different_file_name(tmp_path):
+    reposdir = tmp_path / "repos"
+    reposdir.mkdir()
+    (reposdir / "fedora-recovery-code.repo").write_text("[code]\nname=Visual Studio Code\n")
+    run = _run_repos_role(tmp_path, reposdir, ["code"])
+    assert run.returncode == 0, run.stdout + run.stderr
+    assert sorted(p.name for p in reposdir.iterdir()) == ["fedora-recovery-code.repo"]

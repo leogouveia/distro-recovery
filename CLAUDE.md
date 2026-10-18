@@ -169,7 +169,9 @@ as variáveis `dr_family/dr_repos/dr_groups/dr_packages/dr_swaps` de `vars.yml`.
 - `backup --ansible` copia o playbook para `<dir>/ansible/` e escreve `vars.yml` (pasta da
   ferramenta, reescrita a cada backup). `restore [--check]` usa o playbook empacotado e gera
   as variáveis na hora, então edições no `decisions.yml` valem sem novo backup.
-- repos: `rpm_key` (só https) -> `yum_repository` (`gpgcheck` sempre ligado) -> `copr` (COPR) ->
+- repos: `rpm_key` (só https) -> `yum_repository` SÓ para ids que nenhum arquivo já define
+  (pacotes como vivaldi-stable reescrevem o próprio .repo; redefinir quebrava a idempotência e
+  duplicava ids de sobras antigas; `gpgcheck` sempre ligado) -> `copr` (COPR) ->
   pacote dono + `dnf5 config-manager setopt <id>.enabled=1` (third-party).
 - packages: `dnf5 repoquery --available` -> instala a interseção -> reporta ausentes com
   `--whatobsoletes`/`--whatprovides`, sem falhar.

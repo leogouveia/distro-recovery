@@ -158,8 +158,9 @@ uv run ruff format --check
 ```
 
 Toda leitura do sistema passa por um *runner* injetável; os testes e o
-`backup --from-fixtures` usam as saídas gravadas em `tests/fixtures/dnf5/`. O teste de sintaxe
-do playbook precisa da coleção `community.general` (sem ela, é pulado).
+`backup --from-fixtures` usam as saídas gravadas em `tests/fixtures/dnf5/`. Os testes que rodam o
+playbook (sintaxe e o role `repos`) precisam da coleção `community.general` (sem ela, são
+pulados).
 
 ```
 src/distro_recovery/

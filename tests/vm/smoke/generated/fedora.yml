@@ -1,5 +1,6 @@
 # Dados de exemplo para o teste em VM (tests/vm). Pequenos e públicos, de propósito:
-#  - 1 repositório externo real, com chave baixada da internet (1Password)
+#  - 2 repositórios externos reais, com chave baixada da internet (1Password e Vivaldi; o
+#    pacote do Vivaldi reescreve o próprio .repo, o que antes quebrava a idempotência)
 #  - 1 grupo pequeno, com pacotes padrão (grupos só com pacotes opcionais não instalam nada)
 #  - pacotes comuns e 1 pacote que não existe (deve ser reportado, sem falhar)
 family: "fedora"
@@ -10,6 +11,12 @@ repos:
     baseurl: "https://downloads.1password.com/linux/rpm/stable/$basearch"
     gpgkey_urls:
       - "https://downloads.1password.com/linux/keys/1password.asc"
+  - id: "vivaldi"
+    kind: "repofile"
+    name: "vivaldi"
+    baseurl: "https://repo.vivaldi.com/archive/rpm/$basearch"
+    gpgkey_urls:
+      - "https://repo.vivaldi.com/archive/linux_signing_key.pub"
 groups:
   - "rpm-development-tools"
 packages:
@@ -17,3 +24,4 @@ packages:
   - "htop"
   - "pacote-que-nao-existe-xyz"
   - "tmux"
+  - "vivaldi-stable"

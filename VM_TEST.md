@@ -17,7 +17,7 @@ scripts/vm-test.sh --data ~/.config/distro-recovery   # o seu backup de verdade
 Na primeira vez ele baixa a imagem oficial do Fedora Cloud (cerca de 500 MB) e a guarda em
 cache. Nas próximas, só reaproveita.
 
-Para acompanhar o que a VM está fazendo, use `--verbose`: a saída dos comandos aparece numa caixa
+Para acompanhar o que a VM está fazendo, a saída é mostrada por padrão (`--quiet` desliga): a saída dos comandos aparece numa caixa
 de altura fixa que rola no lugar, enquanto as linhas `PASS`/`FAIL` ficam fixas acima dela. Ao
 terminar cada etapa, a caixa some e deixa só uma linha de resumo. Os logs completos continuam
 sendo guardados (veja "Se falhar"). Fora de um terminal (por exemplo, redirecionando para um
@@ -30,7 +30,7 @@ No final aparece `RESULTADO: PASSOU` (código de saída 0) ou `RESULTADO: FALHOU
 | `--data DIR` | Dados a restaurar: `DIR/generated/fedora.yml` e, se existir, `DIR/decisions.yml`. Só leitura. |
 | `--release N` | Versão do Fedora da VM (padrão 44). |
 | `--memory MB`, `--cpus N` | Recursos da VM (padrão 4096 MB e 2 CPUs). |
-| `--verbose`, `-v` | Mostra a saída dos comandos da VM (instalações, Ansible) numa caixa de 10 linhas que rola no mesmo lugar, sem encher a tela. |
+| `--quiet`, `-q` | Esconde a saída dos comandos da VM. Por padrão ela aparece (instalações, Ansible) numa caixa de 10 linhas que rola no mesmo lugar, sem encher a tela. |
 | `--keep` | Não apaga a VM no final. Mostra o comando `ssh` para entrar e como desligar. |
 | `--no-kvm` | Sem aceleração (muito mais lento; use só se não tiver `/dev/kvm`). |
 | `--refresh-image` | Baixa a imagem base de novo. |
@@ -93,7 +93,7 @@ Pequenos e públicos, de propósito:
 
 | Item | Para quê |
 |---|---|
-| Repositório do 1Password + `1password-cli` | Testa um repositório externo real, com a chave baixada da internet. |
+| Repositórios do 1Password e do Vivaldi + `1password-cli` e `vivaldi-stable` | Testam repositórios externos reais, com a chave baixada da internet. O pacote do Vivaldi reescreve o próprio `.repo`: garante que o playbook não briga com ele (segunda execução com `changed=0`). |
 | Grupo `rpm-development-tools` | Testa a instalação de grupos. |
 | `htop` | Pacote comum. |
 | `tmux` em `generated` **e** em `exclude` | Prova que `exclude` vence. |

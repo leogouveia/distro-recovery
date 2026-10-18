@@ -16,7 +16,24 @@
     label: "{{ item.0.id }}: {{ item.1 }}"
   when: item.1 is match('^https://')
 
-- name: Define repositories from vendor URLs
+# Só define o repositório se nenhum arquivo já o define. Assim o playbook nunca briga com
+# pacotes que cuidam do próprio .repo (ex.: vivaldi-stable) nem duplica ids de sobras antigas.
+- name: Find repositories that are already defined by some file
+  ansible.builtin.command:
+    argv: [grep, -rlxF, "[{{ item.id }}]", "{{ dr_repo_dir }}"]
+  register: dr_repo_defined
+  loop: "{{ dr_repofiles | selectattr('baseurl', 'defined') | list }}"
+  loop_control:
+    label: "{{ item.id }}"
+  changed_when: false
+  failed_when: dr_repo_defined.rc > 1
+  check_mode: false
+
+- name: Keep only the repositories that are not defined yet
+  ansible.builtin.set_fact:
+    dr_new_repofiles: "{{ dr_repo_defined.results | selectattr('rc', 'equalto', 1) | map(attribute='item') | list }}"
+
+- name: Define the missing repositories from vendor URLs
   ansible.builtin.yum_repository:
     name: "{{ item.id }}"
     description: "{{ item.name }}"
@@ -24,8 +41,9 @@
     gpgcheck: true
     gpgkey: "{{ item.gpgkey_urls | default(omit) }}"
     enabled: true
+    reposdir: "{{ dr_repo_dir }}"
     file: "{{ item.id | regex_replace('[^A-Za-z0-9_.-]', '_') }}"
-  loop: "{{ dr_repofiles | selectattr('baseurl', 'defined') | list }}"
+  loop: "{{ dr_new_repofiles }}"
   loop_control:
     label: "{{ item.id }}"
 
