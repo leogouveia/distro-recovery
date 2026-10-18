@@ -83,6 +83,20 @@ runner injetável (testes usam fixtures).
 - Há `.repo` de uma tentativa anterior (`fedora-recovery-*.repo`, sem dono): são do usuário,
   tratar como repofile comum.
 
+- `group list` / `environment list`: progresso vai para o stderr (confirmado); o stdout termina
+  com uma linha-resumo (`Groups: N (...)`) a ignorar.
+- `environment info` devolve DUAS entradas (instalada: `Installed: True`, repos `@System`;
+  disponível: `False`). Usar a instalada. `Installed` é `yes` no `group info`, `True` no env.
+- `group list --installed` lista só 4 grupos, mas o ambiente requer 14: o baseline vem do
+  `environment info` + `group info` de cada grupo requerido (todos `Installed: yes`).
+- `rpm -q --whatprovides system-release` → `fedora-release-workstation`.
+- Fixtures: `manifest.yml` mapeia argv exato (prefixo `dnf5 --assumeno`) → arquivo; leituras
+  de arquivo/diretório usam `cat`/`ls -1` pelo runner. `user_name` do histórico foi
+  anonimizado (`1000 Test User <user>`). Sem `.repo` com credencial ou `gpgcheck=0` nas
+  fixtures reais: casos de pending precisam de fixtures sintéticas.
+- Nunca rodar dnf5 sem `-C --assumeno` na coleta: sem cache ele pode pedir importação de
+  chave GPG (alteraria o chaveiro).
+
 Baseline (Fase 1): grupos/ambientes da edição instalada (mandatory + default) + regras
 fixas: `kernel*`, `kmod-*` versionados (manter `akmod-*`), `*-firmware`, `glibc-langpack-*`,
 `anaconda*`, quem fornece `system-release`, protegidos. Simulação `--installroot` = Fase 3.
