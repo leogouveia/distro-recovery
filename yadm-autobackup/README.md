@@ -14,6 +14,7 @@ Os arquivos aqui são genéricos. Os seus dados pessoais ficam no `$HOME` e no s
 | `yadm-autobackup.service` | `~/.config/systemd/user/yadm-autobackup.service` |
 | `yadm-autobackup.timer` | `~/.config/systemd/user/yadm-autobackup.timer` |
 | `tracked.example` | `~/.config/yadm/tracked` (opcional) |
+| `install.sh` / `uninstall.sh` | instalam e removem os itens acima |
 
 ## O que faz
 
@@ -43,16 +44,23 @@ SSH com a chave no agente.
 Na raiz do repositório `distro-recovery`:
 
 ```sh
+yadm-autobackup/install.sh --with-tracked
+```
+
+O instalador copia o script e as unidades, roda `yadm-autobackup --dry-run` como teste, recarrega o
+systemd e habilita o timer (`enable --now`). Não sobrescreve arquivos diferentes já instalados sem
+`--force`. Opções: `--no-enable` (instala sem agendar), `--with-tracked` (cria
+`~/.config/yadm/tracked` a partir do exemplo, se não existir) e `--force`.
+
+Instalação manual equivalente:
+
+```sh
 D=yadm-autobackup
 install -Dm755 $D/yadm-autobackup        ~/.local/bin/yadm-autobackup
 install -Dm644 $D/yadm-autobackup.service ~/.config/systemd/user/yadm-autobackup.service
 install -Dm644 $D/yadm-autobackup.timer   ~/.config/systemd/user/yadm-autobackup.timer
-cp -n $D/tracked.example ~/.config/yadm/tracked      # opcional; edite a lista depois
-
-yadm-autobackup --dry-run                            # confira o que faria
 systemctl --user daemon-reload
 systemctl --user enable --now yadm-autobackup.timer
-systemctl --user list-timers yadm-autobackup.timer
 ```
 
 Ajuste antes de instalar, se precisar:
@@ -149,11 +157,16 @@ E remova a linha correspondente de `~/.config/yadm/tracked`, senão o script o a
 ## Desinstalar
 
 ```sh
+yadm-autobackup/uninstall.sh                 # --purge-state também apaga o log
+```
+
+Desabilita o timer e remove o script e as unidades. Manual equivalente:
+
+```sh
 systemctl --user disable --now yadm-autobackup.timer
 rm ~/.config/systemd/user/yadm-autobackup.service ~/.config/systemd/user/yadm-autobackup.timer
 rm ~/.local/bin/yadm-autobackup
 systemctl --user daemon-reload
-rm -rf ~/.local/state/yadm-autobackup          # log; opcional
 ```
 
 `~/.config/yadm/tracked` é seu: remova só se quiser. Os commits já feitos continuam no repositório.
