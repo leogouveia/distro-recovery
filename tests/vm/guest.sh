@@ -3,6 +3,7 @@
 # Espera em $HOME: dist/*.whl (a ferramenta) e data/ (generated/fedora.yml [+ decisions.yml]).
 set -uo pipefail
 
+export PYTHONUNBUFFERED=1  # ansible e pip mostram a saída na hora, não só no final
 DR=/opt/dr/bin/distro-recovery
 PY=/opt/dr/bin/python
 DATA="$HOME/data"
@@ -14,6 +15,18 @@ ok()      { printf 'PASS  %s\n' "$1"; PASS=$((PASS + 1)); }
 bad()     { printf 'FAIL  %s\n' "$1"; FAIL=$((FAIL + 1)); }
 section() { printf '\n== %s\n' "$1"; }
 check()   { local desc=$1; shift; if "$@" >/dev/null 2>&1; then ok "$desc"; else bad "$desc"; fi; }
+
+# Roda um comando guardando a saída em um arquivo. Com VERBOSE=1, repete a saída na tela com o
+# prefixo "@@ " (o vm-test.sh mostra essas linhas numa caixa que rola no lugar).
+run_logged() {
+    local log=$1
+    shift
+    if [ "${VERBOSE:-0}" = 1 ]; then
+        "$@" 2>&1 | tee "$log" | sed -u 's/^/@@ /'
+        return "${PIPESTATUS[0]}"
+    fi
+    "$@" >"$log" 2>&1
+}
 
 # ------------------------------------------------------------------ setup
 setup() {
@@ -77,20 +90,20 @@ run_tests() {
             CANARY=$c; break
         fi
     done
-    [ -n "$CANARY" ] && sudo dnf5 install -y "$CANARY" >"$LOGS/canary.log" 2>&1
+    [ -n "$CANARY" ] && run_logged "$LOGS/canary.log" sudo dnf5 install -y "$CANARY"
     check "pacote canário instalado (${CANARY:-nenhum})" test -n "$CANARY"
     pkgs_now >"$LOGS/pkgs.before"; repo_files >"$LOGS/repos.before"; KEYS_BEFORE=$(key_count)
     echo "pacotes antes: $(wc -l <"$LOGS/pkgs.before"), chaves antes: $KEYS_BEFORE"
 
     section "restore --check (simulação) não altera o sistema"
-    restore --check >"$LOGS/check.log" 2>&1; rc=$?
+    run_logged "$LOGS/check.log" restore --check; rc=$?
     [ "$rc" -eq 0 ] && ok "restore --check terminou com código 0" || { bad "restore --check código $rc"; tail -25 "$LOGS/check.log"; }
     pkgs_now >"$LOGS/pkgs.check"; repo_files >"$LOGS/repos.check"
     check "nenhum pacote mudou" cmp -s "$LOGS/pkgs.before" "$LOGS/pkgs.check"
     check "nenhum arquivo .repo mudou" cmp -s "$LOGS/repos.before" "$LOGS/repos.check"
 
     section "restore (aplicando)"
-    restore >"$LOGS/restore1.log" 2>&1; rc=$?
+    run_logged "$LOGS/restore1.log" restore; rc=$?
     [ "$rc" -eq 0 ] && ok "restore terminou com código 0" || { bad "restore código $rc"; tail -40 "$LOGS/restore1.log"; }
     pkgs_now >"$LOGS/pkgs.after"
 
@@ -154,7 +167,7 @@ run_tests() {
     [ -z "$CANARY" ] || { rpm -q "$CANARY" >/dev/null 2>&1 && ok "canário $CANARY continua instalado" || bad "canário $CANARY foi removido"; }
 
     section "Idempotência (segunda execução)"
-    restore >"$LOGS/restore2.log" 2>&1; rc=$?
+    run_logged "$LOGS/restore2.log" restore; rc=$?
     [ "$rc" -eq 0 ] && ok "segunda execução com código 0" || { bad "segunda execução código $rc"; tail -30 "$LOGS/restore2.log"; }
     if grep -qE 'changed=0 ' "$LOGS/restore2.log"; then ok "segunda execução sem mudanças (changed=0)"; else bad "segunda execução alterou algo"; grep -E 'changed=|^changed:' "$LOGS/restore2.log" | head; fi
 

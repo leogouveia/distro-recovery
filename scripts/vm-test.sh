@@ -11,6 +11,7 @@ CPUS=2
 DISK=20G
 DATA="$REPO_ROOT/tests/vm/smoke"
 KEEP=0
+VERBOSE=0
 KVM=auto
 REFRESH=0
 CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/distro-recovery-vm"
@@ -27,6 +28,7 @@ Uso: scripts/vm-test.sh [opções]
   --memory MB     Memória da VM (padrão: $MEMORY)
   --cpus N        CPUs da VM (padrão: $CPUS)
   --no-kvm        Não usa KVM (muito mais lento)
+  --verbose       Mostra a saída dos comandos da VM numa caixa que rola no lugar
   --keep          Mantém a VM ligada ao final e mostra como entrar (ssh) e desligar
   --refresh-image Baixa a imagem base de novo
   --cache-dir DIR Onde guardar a imagem baixada (padrão: $CACHE_DIR)
@@ -53,6 +55,7 @@ while [ $# -gt 0 ]; do
         --cache-dir) CACHE_DIR=${2:?--cache-dir precisa de um valor}; shift 2 ;;
         --no-kvm) KVM=off; shift ;;
         --keep) KEEP=1; shift ;;
+        --verbose | -v) VERBOSE=1; shift ;;
         --refresh-image) REFRESH=1; shift ;;
         -h | --help) usage; exit 0 ;;
         *) usage >&2; die "opção desconhecida: $1" ;;
@@ -229,15 +232,31 @@ vm 'sudo cloud-init status --wait >/dev/null 2>&1 || true'
 log "enviando a ferramenta, os dados e o roteiro de testes"
 copy_to_vm "$WORK/dist" "$WORK/data" "$REPO_ROOT/tests/vm/guest.sh"
 
+# Caixa de altura fixa que rola no lugar (só com --verbose)
+box() { python3 "$REPO_ROOT/scripts/rolling_box.py" --lines 10 "$@"; }
+
 log "preparando a VM (instala ansible, a ferramenta e dependências)"
-if ! vm 'bash guest.sh setup' >"$WORK/setup.log" 2>&1; then
-    tail -30 "$WORK/setup.log" >&2
-    die "falha na preparação da VM"
+set +e
+if [ "$VERBOSE" = 1 ]; then
+    vm 'bash guest.sh setup' 2>&1 | tee "$WORK/setup.log" | box --all --title "preparando a VM"
+    SETUP_RC=${PIPESTATUS[0]}
+else
+    vm 'bash guest.sh setup' >"$WORK/setup.log" 2>&1
+    SETUP_RC=$?
+fi
+set -e
+if [ "$SETUP_RC" -ne 0 ]; then
+    [ "$VERBOSE" = 1 ] || tail -30 "$WORK/setup.log" >&2
+    die "falha na preparação da VM (log: $WORK/setup.log)"
 fi
 
 log "executando os testes na VM"
 set +e
-vm 'bash guest.sh test' 2>&1 | tee "$WORK/test.log"
+if [ "$VERBOSE" = 1 ]; then
+    vm 'VERBOSE=1 bash guest.sh test' 2>&1 | tee "$WORK/test.log" | box --title "saída dos comandos"
+else
+    vm 'bash guest.sh test' 2>&1 | tee "$WORK/test.log"
+fi
 RESULT=${PIPESTATUS[0]}
 set -e
 
