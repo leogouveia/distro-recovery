@@ -78,10 +78,21 @@ Código de saída: **0** tudo certo, **2** há pendências em `pending.yml`, **1
 
 ### 2. Revisar as pendências
 
-Abra `generated/pending.yml`. Para cada item, decida no `decisions.yml`:
+Se o backup terminar com código 2, abra `generated/pending.yml`. Cada item mostra o motivo
+(`reason_code`). Decida no `decisions.yml`:
 
 - app que **não é seu** → `exclude`;
 - app que **é seu** → `include`.
+
+Ainda não tem o `decisions.yml`? Gere um já comentado, com instruções, exemplos e as suas
+pendências atuais como sugestões:
+
+```bash
+distro-recovery init
+```
+
+O `init` só cria o arquivo se ele não existir; nunca sobrescreve o seu. Depois de decidir, rode o
+`backup` de novo: o item sai do `pending.yml`.
 
 ### 3. Restaurar
 

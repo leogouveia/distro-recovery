@@ -16,6 +16,7 @@ from distro_recovery.backends.base import CommandNotInFixtures, FixtureRunner, S
 from distro_recovery.backends.dnf5 import Dnf5Backend
 from distro_recovery.brewfile import parse_brewfile
 from distro_recovery.classify import Context, classify_all, split_repos
+from distro_recovery.decisions_template import render_decisions_template
 from distro_recovery.keys import fetch_key, key_fingerprints
 from distro_recovery.merge import build_vars, load_decisions
 from distro_recovery.model import Confidence
@@ -179,11 +180,17 @@ def backup(
             if r.confidence is Confidence.EXCLUDED:
                 suffix = f" (@{r.group})" if r.group else ""
                 typer.echo(f"  excluído: {r.name}  [{r.reason_code.value}]{suffix}")
+    decisions_missing = not (out_dir / "decisions.yml").exists()
     if counts["pending_packages"] or counts["pending_repos"]:
         typer.echo(
             f"pendências: {counts['pending_packages']} pacotes, {counts['pending_repos']} "
             f"repositórios -> revise {gen / 'pending.yml'}"
         )
+    if decisions_missing:
+        typer.echo(
+            "dica: crie o decisions.yml (com instruções e exemplos) com `distro-recovery init`"
+        )
+    if counts["pending_packages"] or counts["pending_repos"]:
         raise typer.Exit(EXIT_PENDING)
 
 
@@ -202,6 +209,33 @@ def review() -> None:
 def diff() -> None:
     """Compara o sistema com o inventário."""
     _stub("diff")
+
+
+@app.command()
+def init(
+    dir_: Path | None = typer.Option(None, "--dir", help="Diretório de dados do usuário."),
+) -> None:
+    """Cria o decisions.yml comentado (com instruções e exemplos). Nunca sobrescreve."""
+    out_dir = (dir_ or DEFAULT_DIR).expanduser()
+    target = out_dir / "decisions.yml"
+    if target.exists():
+        typer.echo(f"{target} já existe: nada foi alterado")
+        return
+    pending = None
+    pending_yml = out_dir / "generated" / "pending.yml"
+    try:
+        if pending_yml.exists():
+            pending = YAML(typ="safe").load(pending_yml.read_text()) or {}
+        out_dir.mkdir(parents=True, exist_ok=True)
+        with target.open("x") as fh:  # "x": falha em vez de sobrescrever
+            fh.write(render_decisions_template(pending))
+    except FileExistsError:
+        typer.echo(f"{target} já existe: nada foi alterado")
+        return
+    except (OSError, ValueError) as exc:
+        raise _fail(str(exc)) from exc
+    typer.echo(f"criado {target}")
+    typer.echo("abra o arquivo, leia as instruções e escreva as suas decisões")
 
 
 def _run_playbook(argv: list[str]) -> int:

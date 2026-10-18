@@ -183,7 +183,10 @@ as variáveis `dr_family/dr_repos/dr_groups/dr_packages/dr_swaps` de `vars.yml`.
 ## CLI e códigos de saída
 - `backup [--ansible] [--dir PATH] [--from-fixtures DIR] [--verbose]`: 0 ok, 2 pendências, 1 erro
 - `diff [--json]`: 0 sem drift, 3 drift
-- `review`, `restore [--check]`, `doctor`
+- `init [--dir]`: cria `decisions.yml` comentado (instruções, exemplo e pendências do último
+  backup como sugestões). Só cria se não existir; é o ÚNICO comando que escreve nesse arquivo,
+  e o `backup` apenas sugere rodá-lo.
+- `review`, `restore [--check] [--no-ask-become-pass]`, `doctor`
 `--from-fixtures` roda o backup inteiro sem tocar no sistema.
 
 ## Comandos de desenvolvimento
