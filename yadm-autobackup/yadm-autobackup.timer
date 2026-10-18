@@ -1,0 +1,11 @@
+[Unit]
+Description=Backup diário dos dotfiles (yadm) às 13h e ao ligar o PC
+
+[Timer]
+OnCalendar=*-*-* 13:00:00
+OnBootSec=5min
+# Se o PC estava desligado às 13h, roda assim que ligar.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

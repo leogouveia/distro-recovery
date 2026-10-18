@@ -1,0 +1,11 @@
+[Unit]
+Description=Backup automático dos dotfiles (yadm)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/yadm-autobackup
+# O push por SSH usa o agente do GNOME (gcr-ssh-agent).
+Environment=SSH_AUTH_SOCK=%t/gcr/ssh
+Nice=10

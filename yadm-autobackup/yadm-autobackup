@@ -1,0 +1,184 @@
+#!/usr/bin/env bash
+# yadm-autobackup: atualiza Brewfile e distro-recovery, e faz commit + push dos dotfiles no yadm.
+# Uso: yadm-autobackup [--dry-run]
+#   --dry-run  só mostra o que faria; não roda geradores, não faz stage/commit/push.
+set -uo pipefail
+
+DRY=0
+[[ "${1:-}" == "--dry-run" ]] && DRY=1
+
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/yadm"
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/yadm-autobackup"
+TRACKED_FILE="$CONFIG_DIR/tracked"
+ENCRYPT_FILE="$CONFIG_DIR/encrypt"
+ARCHIVE="$HOME/.local/share/yadm/archive"
+YADM_REPO="$HOME/.local/share/yadm/repo.git"
+BREWFILE="$HOME/.Brewfile"
+
+# Padrões de segredo procurados nas linhas ADICIONADAS ao stage.
+SECRET_RE='BEGIN [A-Z ]*PRIVATE KEY|ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|xox[baprs]-[A-Za-z0-9-]{10,}|sk-[A-Za-z0-9]{20,}|(password|passwd|secret|token|api[_-]?key)["'\'' ]*[:=]["'\'' ]*[A-Za-z0-9/+_.-]{12,}'
+# Nomes que nunca devem ir em texto claro para o repo.
+FORBIDDEN_RE='(^|/)id_[a-z0-9_]+$|\.pem$|\.key$|\.p12$|(^|/)known_hosts$'
+
+WARNINGS=()
+
+log() { printf '[%s] %s\n' "$(date +%H:%M:%S)" "$*"; }
+warn() { WARNINGS+=("$*"); log "AVISO: $*"; }
+
+notify() {
+  command -v notify-send >/dev/null 2>&1 || return 0
+  notify-send --app-name=yadm-autobackup --urgency="${2:-normal}" "yadm-autobackup" "$1" || true
+}
+
+die() {
+  log "ERRO: $*"
+  notify "Falhou: $*" critical
+  exit 1
+}
+
+# Executa o comando, ou só o imprime no --dry-run.
+run() {
+  if ((DRY)); then
+    log "[dry-run] $*"
+    return 0
+  fi
+  "$@"
+}
+
+if ((!DRY)); then
+  mkdir -p "$STATE_DIR"
+  exec > >(tee "$STATE_DIR/last.log") 2>&1
+fi
+
+# PATH mínimo quando rodado pelo systemd.
+PATH="$HOME/.local/bin:/home/linuxbrew/.linuxbrew/bin:$PATH"
+
+cd "$HOME" || die "não consegui entrar em \$HOME"
+
+command -v yadm >/dev/null 2>&1 || die "yadm não encontrado no PATH"
+
+# 1. Lock: uma execução por vez e nunca durante outra operação do yadm.
+if ((!DRY)); then
+  exec 9>"${XDG_RUNTIME_DIR:-/tmp}/yadm-autobackup.lock"
+  flock -n 9 || { log "já existe outra execução; saindo"; exit 0; }
+fi
+[[ ! -e "$YADM_REPO/index.lock" ]] || die "yadm em uso (index.lock existe); tente de novo depois"
+
+# 2. Brewfile (inventário; não atualiza nem remove pacotes).
+if command -v brew >/dev/null 2>&1; then
+  log "atualizando $BREWFILE"
+  run brew bundle dump --force --file "$BREWFILE" || warn "brew bundle dump falhou; Brewfile pode estar desatualizado"
+else
+  warn "brew não encontrado; Brewfile não atualizado"
+fi
+
+# 3. distro-recovery (somente leitura no sistema; reescreve generated/). Saída 2 = há pendências.
+if command -v distro-recovery >/dev/null 2>&1; then
+  log "rodando distro-recovery backup"
+  if ((DRY)); then
+    log "[dry-run] distro-recovery backup"
+  else
+    distro-recovery backup
+    rc=$?
+    case $rc in
+      0) ;;
+      2) log "distro-recovery: há pendências para revisar (pending.yml)" ;;
+      *) warn "distro-recovery backup falhou (código $rc); dados do sistema podem estar desatualizados" ;;
+    esac
+  fi
+else
+  warn "distro-recovery não encontrado; dados do sistema não atualizados"
+fi
+
+# 4. Stage: arquivos já rastreados + caminhos da lista 'tracked'.
+if ((DRY)); then
+  log "[dry-run] yadm add -u"
+  if [[ -r "$TRACKED_FILE" ]]; then
+    while IFS= read -r p; do
+      [[ -z "$p" || "$p" == \#* ]] && continue
+      log "[dry-run] yadm add -- $HOME/$p"
+    done <"$TRACKED_FILE"
+  fi
+  log "[dry-run] alterações atuais:"
+  yadm status -s
+else
+  yadm add -u || die "yadm add -u falhou"
+  if [[ -r "$TRACKED_FILE" ]]; then
+    while IFS= read -r p; do
+      [[ -z "$p" || "$p" == \#* ]] && continue
+      if [[ -e "$HOME/$p" ]]; then
+        yadm add -- "$HOME/$p" || warn "não consegui adicionar $p"
+      else
+        warn "caminho de 'tracked' não existe: $p"
+      fi
+    done <"$TRACKED_FILE"
+  fi
+
+  # 5. Travas de segurança sobre o que está em stage.
+  mapfile -t STAGED < <(yadm diff --cached --name-only --diff-filter=ACMR)
+
+  blocked=()
+  declare -A encrypted=()
+  if [[ -r "$ENCRYPT_FILE" ]]; then
+    while IFS= read -r p; do
+      [[ -z "$p" || "$p" == \#* ]] && continue
+      encrypted["$p"]=1
+    done <"$ENCRYPT_FILE"
+  fi
+  for f in "${STAGED[@]}"; do
+    if [[ -n "${encrypted[$f]:-}" || "$f" =~ $FORBIDDEN_RE ]]; then
+      case "$f" in *.pub) continue ;; esac
+      blocked+=("$f")
+    fi
+  done
+  if ((${#blocked[@]})); then
+    yadm reset -q
+    die "arquivo sensível em stage (${blocked[*]}); nada foi commitado"
+  fi
+
+  leaked=()
+  for f in "${STAGED[@]}"; do
+    if yadm diff --cached -U0 -- "$f" | grep '^+' | grep -v '^+++' | grep -qiE "$SECRET_RE"; then
+      leaked+=("$f")
+    fi
+  done
+  if ((${#leaked[@]})); then
+    yadm reset -q
+    die "possível segredo em: ${leaked[*]}; nada foi commitado"
+  fi
+fi
+
+# 6. Archive cifrado desatualizado? (não dá para rodar 'yadm encrypt': pede senha)
+if [[ -r "$ENCRYPT_FILE" && -e "$ARCHIVE" ]]; then
+  stale=()
+  while IFS= read -r p; do
+    [[ -z "$p" || "$p" == \#* ]] && continue
+    for f in "$HOME"/$p; do
+      [[ -e "$f" && "$f" -nt "$ARCHIVE" ]] && stale+=("${f#"$HOME"/}")
+    done
+  done <"$ENCRYPT_FILE"
+  ((${#stale[@]})) && warn "archive desatualizado (mudou: ${stale[*]}); rode 'yadm encrypt'"
+fi
+
+# 7. Commit e push.
+if ((DRY)); then
+  log "[dry-run] se houver algo em stage: yadm commit + yadm push"
+else
+  if yadm diff --cached --quiet; then
+    log "nada para commitar"
+  else
+    n=$(yadm diff --cached --name-only | wc -l)
+    yadm commit -q -m "auto: backup $(date +%F) ($n arquivos)" || die "yadm commit falhou"
+    log "commit criado ($n arquivos)"
+  fi
+  # push mesmo sem commit novo: reenvia commits locais de execuções anteriores que falharam no push.
+  if [[ -n "$(yadm rev-list '@{u}..HEAD' 2>/dev/null)" ]]; then
+    yadm push -q || die "yadm push falhou (commit local mantido; tentarei de novo na próxima execução)"
+    log "push feito"
+  fi
+fi
+
+if ((${#WARNINGS[@]})); then
+  notify "Concluído com avisos: ${WARNINGS[*]}"
+fi
+log "fim"

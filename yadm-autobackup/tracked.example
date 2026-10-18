@@ -1,0 +1,7 @@
+# Caminhos relativos ao $HOME, um por linha. Instale como ~/.config/yadm/tracked.
+# Arquivos NOVOS dentro destes caminhos entram no backup sozinhos.
+# Arquivos já rastreados pelo yadm não precisam estar aqui (o script usa 'yadm add -u').
+# Cuidado com diretórios: o script bloqueia chaves privadas e segredos óbvios, mas não é infalível.
+.config/zsh
+.config/distro-recovery/decisions.yml
+.config/distro-recovery/generated
