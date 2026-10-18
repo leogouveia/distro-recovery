@@ -1,0 +1,19 @@
+# Dados de exemplo para o teste em VM (tests/vm). Pequenos e públicos, de propósito:
+#  - 1 repositório externo real, com chave baixada da internet (1Password)
+#  - 1 grupo pequeno, com pacotes padrão (grupos só com pacotes opcionais não instalam nada)
+#  - pacotes comuns e 1 pacote que não existe (deve ser reportado, sem falhar)
+family: "fedora"
+repos:
+  - id: "1password"
+    kind: "repofile"
+    name: "1Password Stable Channel"
+    baseurl: "https://downloads.1password.com/linux/rpm/stable/$basearch"
+    gpgkey_urls:
+      - "https://downloads.1password.com/linux/keys/1password.asc"
+groups:
+  - "rpm-development-tools"
+packages:
+  - "1password-cli"
+  - "htop"
+  - "pacote-que-nao-existe-xyz"
+  - "tmux"

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import re
 import shutil
 import subprocess
@@ -211,6 +212,11 @@ def _run_playbook(argv: list[str]) -> int:
 def restore(
     dir_: Path | None = typer.Option(None, "--dir", help="Diretório de dados do usuário."),
     check: bool = typer.Option(False, "--check", help="Simula, sem alterar o sistema."),
+    ask_become_pass: bool = typer.Option(
+        True,
+        "--ask-become-pass/--no-ask-become-pass",
+        help="Pede a senha do sudo (desnecessário como root ou com sudo sem senha).",
+    ),
 ) -> None:
     """Restaura repositórios, grupos e pacotes. Nunca remove, nem faz downgrade."""
     out_dir = (dir_ or DEFAULT_DIR).expanduser()
@@ -234,7 +240,9 @@ def restore(
     with tempfile.TemporaryDirectory() as tmp:
         vars_file = Path(tmp) / "vars.yml"
         vars_file.write_text(render_ansible_vars(data))
-        argv = ["ansible-playbook", "-i", "localhost,", "-c", "local", "-K", "-e", f"@{vars_file}"]
+        argv = ["ansible-playbook", "-i", "localhost,", "-c", "local", "-e", f"@{vars_file}"]
+        if ask_become_pass and os.geteuid() != 0:
+            argv.append("-K")
         if check:
             argv.append("--check")
         argv.append(str(PACKAGED_ANSIBLE / "site.yml"))

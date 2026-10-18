@@ -1,0 +1,5 @@
+# tmux está em generated/fedora.yml, mas exclude vence; zsh só existe aqui (include).
+include:
+  - "zsh"
+exclude:
+  - "tmux"

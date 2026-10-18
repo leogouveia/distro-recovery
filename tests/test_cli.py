@@ -224,6 +224,7 @@ def playbook_calls(monkeypatch):
 
     monkeypatch.setattr(cli, "_run_playbook", fake)
     monkeypatch.setattr(cli.shutil, "which", lambda name: "/usr/bin/ansible-playbook")
+    monkeypatch.setattr(cli.os, "geteuid", lambda: 1000)
     return calls
 
 
@@ -283,3 +284,22 @@ def test_restore_mentions_pending_items_but_still_runs(tmp_path, playbook_calls)
     run(tmp_path)
     res = restore(tmp_path)
     assert "pending.yml" in res.output and len(playbook_calls) == 1
+
+
+def test_restore_asks_for_become_password_by_default(tmp_path, playbook_calls):
+    run(tmp_path)
+    restore(tmp_path)
+    assert "-K" in playbook_calls[0]["argv"]
+
+
+def test_restore_can_skip_the_become_password_prompt(tmp_path, playbook_calls):
+    run(tmp_path)
+    restore(tmp_path, "--no-ask-become-pass")
+    assert "-K" not in playbook_calls[0]["argv"]
+
+
+def test_restore_as_root_never_asks_for_a_password(tmp_path, playbook_calls, monkeypatch):
+    run(tmp_path)
+    monkeypatch.setattr(cli.os, "geteuid", lambda: 0)
+    restore(tmp_path)
+    assert "-K" not in playbook_calls[0]["argv"]

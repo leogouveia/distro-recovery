@@ -176,8 +176,9 @@ as variáveis `dr_family/dr_repos/dr_groups/dr_packages/dr_swaps` de `vars.yml`.
 - Testes estáticos garantem: sem remoção, sem downgrade, sem desabilitar GPG, e
   `--allowerasing` só no role swaps. `ansible-core` é dependência de desenvolvimento;
   a verificação de sintaxe exige a coleção `community.general` (senão o teste é pulado).
-- Não verificado sem root: os módulos `dnf5`/`copr` exigem root mesmo em `--check`; a lógica
-  dos demais passos foi simulada com dados reais.
+- Os módulos `dnf5`/`copr` exigem root mesmo em `--check`; por isso o restore é validado em VM
+  (`scripts/vm-test.sh`, ver `VM_TEST.md`). Validado em 17/10/2026 com `tests/vm/smoke`
+  (Fedora 44 Cloud): 18 verificações ok. Não coberto: swaps, COPR, hardware.
 
 ## CLI e códigos de saída
 - `backup [--ansible] [--dir PATH] [--from-fixtures DIR] [--verbose]`: 0 ok, 2 pendências, 1 erro
@@ -190,6 +191,7 @@ as variáveis `dr_family/dr_repos/dr_groups/dr_packages/dr_swaps` de `vars.yml`.
 - `uv sync` — instala dependências
 - `uv run pytest` — testes
 - `uv run ruff check` / `uv run ruff format --check` — lint
+- `scripts/vm-test.sh [--data DIR]` — restore de ponta a ponta numa VM descartável (QEMU, sem sudo)
 
 ## Decisões pendentes
 Ver `docs/pendencias.md`.
