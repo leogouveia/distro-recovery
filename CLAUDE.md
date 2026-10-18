@@ -65,6 +65,24 @@ runner injetável (testes usam fixtures).
 - protegidos: `/etc/dnf/protected.d/*.conf`
 - extras aprovados: `dnf5 group info`, `dnf5 environment info`, `rpm -q --whatprovides system-release`
 
+### Divergências observadas (dnf5 5.4.6, Fedora 44) — spec ajustada
+- `--queryformat` NÃO interpreta `\t`/`\n` literais: o shell deve passar TAB/LF reais
+  (`$'...\t...\n'`). O runner nunca usa `shell=True`; o argv leva os caracteres reais.
+- `from_repo` de ~1117 pacotes (instalados pelo Anaconda) é um hash de 32 hex
+  (ex.: `19278be6...`), não um id de repo. Tratar como "mídia de instalação": nunca entra
+  em "repos necessários". Também aparecem `@commandline` (local_rpm).
+- `reason` literais: `User`, `Group`, `Dependency`, `Weak Dependency` (com espaço).
+- `history list --json` traz `command_line`; `history info --json` traz `description`
+  (igual ao comando) e `packages[].{nevra,action,reason,repository}`; nevra no formato
+  `nome-epoch:ver-rel.arch`.
+- `dnf5 leaves` imprime `- nevra` por linha (não só o nome).
+- `group list` / `environment list` imprimem linhas de progresso ("Updating and loading
+  repositories") — o parser deve ignorá-las (provável stderr; confirmar ao salvar fixtures).
+- `rpm -qf` mistura "file ... is not owned by any package" com nomes de pacote, uma linha
+  por arquivo na ordem do glob.
+- Há `.repo` de uma tentativa anterior (`fedora-recovery-*.repo`, sem dono): são do usuário,
+  tratar como repofile comum.
+
 Baseline (Fase 1): grupos/ambientes da edição instalada (mandatory + default) + regras
 fixas: `kernel*`, `kmod-*` versionados (manter `akmod-*`), `*-firmware`, `glibc-langpack-*`,
 `anaconda*`, quem fornece `system-release`, protegidos. Simulação `--installroot` = Fase 3.
