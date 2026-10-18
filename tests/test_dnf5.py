@@ -6,6 +6,7 @@ from distro_recovery.backends.dnf5 import (
     parse_info_blocks,
     parse_installed,
     parse_leaves,
+    parse_repo_file,
 )
 from distro_recovery.model import Reason, RepoKind
 
@@ -153,3 +154,37 @@ def test_repos_normalizes_fixed_arch_and_release(backend):
         "gitlab.com_paulcarroty_vscodium_repo"
     ]
     assert "x86_64" not in (spec.baseurl or "")
+
+
+def test_parse_repo_file_handles_colons_and_no_interpolation():
+    text = "[copr:h:o:p]\nname=x\nbaseurl=https://h/$releasever/$basearch/\n"
+    assert parse_repo_file(text)["copr:h:o:p"]["baseurl"] == "https://h/$releasever/$basearch/"
+
+
+def _spec(opts, owner=None, sid="r"):
+    return Dnf5Backend._spec(sid, owner, opts, "44", 1)
+
+
+def test_spec_credentials_and_gpgcheck_warnings():
+    spec = _spec({"baseurl": "https://user:tok@host/fedora-44/", "gpgcheck": "0"})
+    codes = {w.split(":")[0] for w in spec.warnings}
+    assert codes == {"credentials_in_url", "gpgcheck_disabled"}
+    assert spec.kind is RepoKind.REPOFILE
+
+
+def test_spec_release_package_kind():
+    spec = _spec({"baseurl": "https://x/y"}, owner="rpmfusion-nonfree-release")
+    assert spec.kind is RepoKind.RELEASE_PACKAGE
+    assert spec.package == "rpmfusion-nonfree-release"
+
+
+def test_spec_package_owned_repofile_warns():
+    spec = _spec({"baseurl": "https://x/y"}, owner="chatgpt")
+    assert spec.kind is RepoKind.REPOFILE and spec.package == "chatgpt"
+    assert any(w.startswith("owned_by_package") for w in spec.warnings)
+
+
+def test_spec_fingerprint_from_key_filename():
+    fp = "3BFA0E4AE8B8CC16A2D9BA684A3B4A566C4660E4"
+    spec = _spec({"gpgkey": f"file:///etc/pki/rpm-gpg/RPM-GPG-KEY-x-{fp}.asc"})
+    assert spec.gpgkeys == (fp.lower(),)
