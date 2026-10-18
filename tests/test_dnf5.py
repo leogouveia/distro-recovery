@@ -87,6 +87,8 @@ def test_history_user_installs(backend):
     assert h.installs["pavucontrol"] == frozenset({45})
     assert 44 in h.installs["vlc"]
     assert "7zip" not in h.installs  # dependência, não User
+    assert {"dracut-live", "livesys-scripts", "grubby", "lvm2"} <= h.image_packages
+    assert "pavucontrol" not in h.image_packages
 
 
 def test_parse_leaves_extracts_names():

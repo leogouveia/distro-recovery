@@ -124,3 +124,4 @@ class UserHistory:
 
     image_tx_ids: frozenset[int]  # builds da imagem de instalação: baseline, não ação do usuário
     installs: dict[str, frozenset[int]]  # nome -> ids das transações
+    image_packages: frozenset[str] = frozenset()  # instalados (qualquer razão) pela imagem

@@ -92,6 +92,10 @@ def _decide(pkg: InstalledPkg, ctx: Context) -> Classified:
             return out(X, ReasonCode.BASELINE)
     elif txs:
         result = out(H, ReasonCode.USER_HISTORY)
+    elif name in ctx.history.image_packages:
+        return out(
+            X, ReasonCode.BASELINE
+        )  # veio com a imagem de instalação, nunca por ação do usuário
     elif name in ctx.leaves:
         result = out(H, ReasonCode.USER_LEAF)
     else:

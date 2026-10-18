@@ -126,8 +126,9 @@ fixas: `kernel*`, `kmod-*` versionados (manter `akmod-*`), `*-firmware`, `glibc-
 > Histórico (divergência aprovada): as transações 1 e 2 desta máquina são builds de imagem
 > (`kiwi`, uid 0, todos os pacotes do repo-hash), não instalação do usuário. "Após a 1ª
 > transação" vira "fora das transações de imagem" (`UserHistory.image_tx_ids` = transações
-> cujos pacotes vêm todos de um `from_repo` hash de 32 hex). Instalações só de imagem não
-> contam como `user_history`.
+> cujos pacotes vêm todos de um `from_repo` hash de 32 hex). Pacotes instalados só pela
+> imagem (qualquer razão) e nunca por ação do usuário são `baseline` (EXCLUDED), mesmo sendo
+> leaves (ex.: `dracut-live`, `livesys-scripts`).
 
 ## Tabela de decisão (classify.py)
 | Condição | Resultado | reason_code |
@@ -173,6 +174,9 @@ packages: filtrar com `dnf5 repoquery --available`, instalar a interseção, rep
 - `uv sync` — instala dependências
 - `uv run pytest` — testes
 - `uv run ruff check` / `uv run ruff format --check` — lint
+
+## Decisões pendentes
+Ver `docs/pendencias.md` (chaves GPG de repositórios, `--ansible`).
 
 ## Fluxo
 TDD na ordem: model → parsers dnf5 → classify (1 teste por reason_code) → render

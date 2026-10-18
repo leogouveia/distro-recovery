@@ -224,15 +224,19 @@ class Dnf5Backend:
             return UserHistory(image_tx_ids=frozenset(), installs={})
         txs = json.loads(self._out([*DNF, "history", "info", *ids, "--json"]))
         installs: dict[str, set[int]] = {}
+        image_packages: set[str] = set()
         for tx in txs:
             if tx.get("status") != "Ok":
                 continue
             for pkg in tx.get("packages", []):
+                if pkg["action"] == "Install" and _is_image_tx(tx):
+                    image_packages.add(parse_nevra(pkg["nevra"]).name)
                 if pkg["action"] == "Install" and pkg["reason"] == Reason.USER:
                     installs.setdefault(parse_nevra(pkg["nevra"]).name, set()).add(tx["id"])
         return UserHistory(
             image_tx_ids=frozenset(int(t["id"]) for t in txs if _is_image_tx(t)),
             installs={n: frozenset(s) for n, s in installs.items()},
+            image_packages=frozenset(image_packages),
         )
 
     def leaves(self) -> frozenset[str]:

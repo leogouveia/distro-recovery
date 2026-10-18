@@ -111,14 +111,23 @@ def test_second_image_transaction_is_not_user_activity():
     check(pkg("nano"), ctx(history=h), X, C.BASELINE)
 
 
-def test_installed_only_by_the_image_is_not_user_history():
-    h = UserHistory(frozenset({1, 2}), {"dracut-live": frozenset({2})})
-    check(pkg("dracut-live"), ctx(history=h), R, C.USER_UNCONFIRMED)
-    check(pkg("dracut-live"), ctx(history=h, leaves=frozenset({"dracut-live"})), H, C.USER_LEAF)
+def test_installed_only_by_the_image_is_baseline_even_if_leaf():
+    h = UserHistory(frozenset({1, 2}), {"dracut-live": frozenset({2})}, frozenset({"dracut-live"}))
+    check(pkg("dracut-live"), ctx(history=h, leaves=frozenset({"dracut-live"})), X, C.BASELINE)
 
 
-def test_baseline_without_history():
-    check(pkg("nano"), ctx(), X, C.BASELINE)
+def test_image_package_without_user_install_is_baseline():
+    h = UserHistory(frozenset({1}), {}, frozenset({"lvm2"}))
+    check(pkg("lvm2"), ctx(history=h), X, C.BASELINE)
+
+
+def test_image_package_the_user_installed_later_is_user_history():
+    h = UserHistory(frozenset({1}), {"htop": frozenset({1, 30})}, frozenset({"htop"}))
+    check(pkg("htop"), ctx(history=h), H, C.USER_HISTORY)
+
+
+def test_unknown_to_history_and_not_a_leaf_still_needs_review():
+    check(pkg("tmux"), ctx(), R, C.USER_UNCONFIRMED)
 
 
 def test_local_rpm_overrides_high():
