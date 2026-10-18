@@ -6,6 +6,7 @@ import configparser
 import json
 import re
 from collections.abc import Iterable
+from dataclasses import replace
 
 from distro_recovery.backends.base import CmdResult, Runner
 from distro_recovery.model import (
@@ -121,6 +122,25 @@ def normalize_url(url: str, releasever: str) -> str:
 
 def _has_credentials(url: str) -> bool:
     return re.search(r"://[^/\s@]+@", url) is not None
+
+
+def parse_rpmkeys(text: str) -> list[tuple[str, str]]:
+    """`rpmkeys --list`: `<fingerprint> <uid> public key` -> (fingerprint em minúsculas, uid)."""
+    keys = []
+    for line in text.splitlines():
+        fp, _, uid = line.strip().partition(" ")
+        if fp and uid:
+            keys.append((fp.lower(), uid))
+    return keys
+
+
+def _copr_fingerprints(owner_project: str | None, keys: list[tuple[str, str]]) -> tuple[str, ...]:
+    """Chaves de COPR têm UID `<dono#projeto@copr.fedorahosted.org>`: casamento exato."""
+    if not owner_project or "/" not in owner_project:
+        return ()
+    owner, project = owner_project.split("/", 1)
+    marker = f"<{owner}#{project}@copr.fedorahosted.org>"
+    return tuple(sorted(fp for fp, uid in keys if marker in uid))
 
 
 def parse_repo_file(text: str) -> dict[str, dict[str, str]]:
@@ -244,13 +264,18 @@ class Dnf5Backend:
                 if sid not in needed:
                     continue
                 cands.setdefault(sid, []).append((owner, opts))
+        keys = parse_rpmkeys(self._out(["rpmkeys", "--list"])) if cands else []
         specs = []
         for sid, options in sorted(cands.items()):
             # duplicado: prefere o que tem gpgkey remota (file:// local não é portável);
             # sort estável mantém a ordem dos arquivos como desempate
             options.sort(key=lambda c: _local_key_only(c[1]))
             owner, opts = options[0]
-            specs.append(self._spec(sid, owner, opts, releasever, len(options)))
+            spec = self._spec(sid, owner, opts, releasever, len(options))
+            if spec.kind is RepoKind.COPR:
+                fps = sorted({*spec.gpgkeys, *_copr_fingerprints(spec.owner, keys)})
+                spec = replace(spec, gpgkeys=tuple(fps))
+            specs.append(spec)
         return specs
 
     @staticmethod

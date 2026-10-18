@@ -92,7 +92,7 @@ runner injetável (testes usam fixtures).
 - `rpm -q --whatprovides system-release` → `fedora-release-workstation`.
 - Fixtures: `manifest.yml` mapeia argv exato (prefixo `dnf5 --assumeno`) → arquivo; leituras
   de arquivo/diretório usam `cat`/`ls -1` pelo runner. `user_name` do histórico foi
-  anonimizado (`1000 Test User <user>`). Sem `.repo` com credencial ou `gpgcheck=0` nas
+  anonimizado (`1000 Test User <user>`), embora o usuário tenha dito que não era necessário. Sem `.repo` com credencial ou `gpgcheck=0` nas
   fixtures reais: casos de pending precisam de fixtures sintéticas.
 - Nunca rodar dnf5 sem `-C --assumeno` na coleta: sem cache ele pode pedir importação de
   chave GPG (alteraria o chaveiro).
@@ -106,8 +106,9 @@ runner injetável (testes usam fixtures).
   depois a ordem do `ls`; emitir warning `duplicate_repo_id`.
 - `.repo` pertencente a um pacote que não é `*-release` nem `fedora-*` (ex.: `chatgpt`)
   -> kind `repofile` com `package` e warning `owned_by_package`.
-- Fingerprints GPG: só dá para obter o fingerprint quando ele está no nome do arquivo da
-  chave; para URLs remotas ficam vazios (só `gpgkey_urls`), pois não há acesso à rede.
+- Fingerprints GPG: (1) quando estão no nome do arquivo da chave; (2) em repos COPR, por
+  casamento exato do UID do `rpmkeys --list` (`<dono#projeto@copr.fedorahosted.org>`). Nos
+  demais repos com URL remota ficam vazios (só `gpgkey_urls`): não há acesso à rede.
 - `fedora-workstation-repositories` distribui google-chrome, rpmfusion-nonfree-* e o copr
   do PyCharm (kind `third-party`, `package` = dono). Os copr:* sem dono são `copr`.
 

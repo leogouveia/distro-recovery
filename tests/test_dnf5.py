@@ -7,6 +7,7 @@ from distro_recovery.backends.dnf5 import (
     parse_installed,
     parse_leaves,
     parse_repo_file,
+    parse_rpmkeys,
 )
 from distro_recovery.model import Reason, RepoKind
 
@@ -223,3 +224,37 @@ def test_owners_rejects_unexpected_exit_code():
     backend = Dnf5Backend(lambda argv: CmdResult("chatgpt-1-2.x86_64\n", 3))
     with pytest.raises(RuntimeError, match="inesperado"):
         backend._owners(["chatgpt.repo"])
+
+
+RPMKEYS = (
+    "AAAA1111 Someone Else <x@y.z> public key\n"
+    "4cb720ffe7f49b2473cd160ab027f75926ae200e kylegospo_webapp-manager (None) "
+    "<kylegospo#webapp-manager@copr.fedorahosted.org> public key\n"
+)
+
+
+def test_parse_rpmkeys():
+    keys = parse_rpmkeys(RPMKEYS)
+    assert keys[0] == ("aaaa1111", "Someone Else <x@y.z> public key")
+    assert keys[1][0] == "4cb720ffe7f49b2473cd160ab027f75926ae200e"
+
+
+def test_copr_fingerprint_matched_by_key_uid(backend):
+    specs = {
+        r.id: r
+        for r in backend.repos(
+            {
+                "copr:copr.fedorainfracloud.org:kylegospo:webapp-manager",
+                "copr:copr.fedorainfracloud.org:myriad-sun:android-studio",
+            }
+        )
+    }
+    web = specs["copr:copr.fedorainfracloud.org:kylegospo:webapp-manager"]
+    assert web.gpgkeys == ("4cb720ffe7f49b2473cd160ab027f75926ae200e",)
+    android = specs["copr:copr.fedorainfracloud.org:myriad-sun:android-studio"]
+    assert android.gpgkeys == ("f31be651d12f06ba669cf4bd18b2160f30190564",)
+
+
+def test_non_copr_repo_gets_no_guessed_fingerprint(backend):
+    spec = {r.id: r for r in backend.repos({"vivaldi"})}["vivaldi"]
+    assert spec.gpgkeys == ()
