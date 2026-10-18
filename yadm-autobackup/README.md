@@ -65,6 +65,51 @@ Ajuste antes de instalar, se precisar:
 Para versionar a instalação no próprio yadm:
 `yadm add ~/.local/bin/yadm-autobackup ~/.config/systemd/user/yadm-autobackup.*`
 
+## Adaptar ao seu ambiente
+
+O script foi escrito para Fedora com GNOME, yadm 3.x e Homebrew. Em outro ambiente, confira estes
+pontos **antes** de habilitar o timer. Os valores ficam no topo de `yadm-autobackup` e nas unidades.
+
+| O que | Onde | Padrão | Quando mudar |
+|---|---|---|---|
+| Agente SSH | `Environment=SSH_AUTH_SOCK=` em `yadm-autobackup.service` | `%t/gcr/ssh` (GNOME) | Em outro desktop ou agente. Descubra com `echo $SSH_AUTH_SOCK`. Exemplos: `%t/keyring/ssh` (gnome-keyring antigo), `%t/ssh-agent.socket` (unit `ssh-agent` do systemd), `%t/gnupg/S.gpg-agent.ssh` (gpg-agent). Sem agente, o push falha; use remoto HTTPS com credential helper ou deixe sem push (veja abaixo). |
+| Local do repo do yadm | `YADM_REPO` | `~/.local/share/yadm/repo.git` | yadm 2.x usa `~/.yadm/repo.git`. Confira com `yadm introspect repo`. |
+| Local do archive cifrado | `ARCHIVE` | `~/.local/share/yadm/archive` | yadm 2.x usa `~/.yadm/files.gpg`. |
+| Config do yadm | `CONFIG_DIR` | `$XDG_CONFIG_HOME/yadm` (`~/.config/yadm`) | yadm 2.x usa `~/.yadm`. Afeta `tracked` e `encrypt`. |
+| Brewfile | `BREWFILE` | `~/.Brewfile` | Se o seu estiver em outro lugar. |
+| Caminho do Homebrew | linha `PATH=` do script | `/home/linuxbrew/.linuxbrew/bin` | No macOS (`/opt/homebrew/bin`) ou instalação em `~/.linuxbrew`. O systemd não carrega o seu PATH de shell. |
+| `distro-recovery` | `~/.local/bin` no `PATH` do script | instalado com `uv tool`/`pipx` em `~/.local/bin` | Se estiver em outro lugar, acrescente-o ao `PATH` do script ou à unidade. |
+| Horário | `yadm-autobackup.timer` | 13:00 e 5 min após o boot | Qualquer `OnCalendar=` válido (`systemd-analyze calendar '<expressão>'`). |
+| Padrões de segredo | `SECRET_RE` e `FORBIDDEN_RE` | genéricos | Acrescente os formatos de token que você usa. Falsos positivos: ajuste a regex ou tire o arquivo do backup. |
+
+Casos comuns:
+
+- **Sem Homebrew ou sem `distro-recovery`:** nada a fazer. O script avisa, notifica e segue com o resto.
+  Para remover o aviso, apague o bloco do passo 2 ou 3 no script.
+- **Sem remoto configurado ou sem push:** o push só acontece se a branch tiver upstream
+  (`yadm rev-parse @{u}`). Defina com `yadm push -u origin <branch>` ou deixe sem; o script fará só commits locais.
+- **Sem criptografia do yadm:** sem `~/.config/yadm/encrypt`, as travas por lista e o aviso do archive
+  são ignorados. A trava por nome e por padrão continua valendo.
+- **Sem `notify-send` ou sem sessão gráfica (servidor):** as notificações são ignoradas; acompanhe pelo
+  `last.log` e pelo `journalctl`. Um timer de usuário em servidor precisa de `loginctl enable-linger $USER`
+  para rodar sem sessão aberta.
+- **Outro sistema de init (sem systemd):** use cron chamando `~/.local/bin/yadm-autobackup`, definindo
+  `SSH_AUTH_SOCK` no crontab. As unidades não se aplicam.
+- **Outro gerenciador de dotfiles** (chezmoi, bare git manual): o script usa `yadm` em todos os passos.
+  Troque por `git --git-dir=... --work-tree=$HOME` e revise as seções de lock e archive.
+- **Muitas máquinas no mesmo repositório:** todas fariam commits automáticos e podem divergir. Use uma
+  branch por máquina (`yadm checkout -b <host>`) ou rode o autobackup em uma só e faça `yadm pull` nas outras.
+- **Nome ou e-mail do git:** o commit usa `user.name`/`user.email` do yadm. Confira com
+  `yadm config user.email`.
+
+Depois de adaptar, valide:
+
+```sh
+shellcheck yadm-autobackup
+yadm-autobackup --dry-run
+systemd-analyze verify --user ~/.config/systemd/user/yadm-autobackup.service ~/.config/systemd/user/yadm-autobackup.timer
+```
+
 ## Usar
 
 ```sh
