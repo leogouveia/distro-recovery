@@ -246,7 +246,7 @@ commands:
   - "/etc/yum.repos.d/rpmfusion-nonfree-steam.repo"
   - "/etc/yum.repos.d/vivaldi.repo"
   file: "rpm_qf.txt"
-  returncode: 0
+  returncode: 8
 - argv:
   - "cat"
   - "/etc/yum.repos.d/1password.repo"

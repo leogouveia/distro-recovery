@@ -205,3 +205,20 @@ def test_spec_local_gpgkey_shipped_by_a_package_is_fine():
 def test_repos_only_defined_by_recovery_files_have_local_key_warning(backend):
     spec = {r.id: r for r in backend.repos({"code"})}["code"]
     assert any(w.startswith("local_gpgkey") for w in spec.warnings)
+
+
+def test_rpm_qf_exit_code_is_the_unowned_count(runner, fixtures_dir):
+    names = [
+        x for x in (fixtures_dir / "yum_repos_ls.txt").read_text().split() if x.endswith(".repo")
+    ]
+    res = runner(["rpm", "-qf", *[f"/etc/yum.repos.d/{f}" for f in names]])
+    unowned = sum(1 for ln in res.stdout.splitlines() if ln.startswith("file "))
+    assert res.returncode == unowned > 0
+
+
+def test_owners_rejects_unexpected_exit_code():
+    from distro_recovery.backends.base import CmdResult
+
+    backend = Dnf5Backend(lambda argv: CmdResult("chatgpt-1-2.x86_64\n", 3))
+    with pytest.raises(RuntimeError, match="inesperado"):
+        backend._owners(["chatgpt.repo"])

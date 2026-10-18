@@ -209,13 +209,22 @@ class Dnf5Backend:
     def leaves(self) -> frozenset[str]:
         return parse_leaves(self._out([*DNF, "leaves"]))
 
+    def _owners(self, files: list[str]) -> list[str]:
+        # `rpm -qf` sai com o número de arquivos sem dono: 0 só quando todos têm dono
+        res = self.run(["rpm", "-qf", *[f"{REPO_DIR}/{f}" for f in files]])
+        lines = res.stdout.splitlines()
+        unowned = sum(1 for ln in lines if ln.startswith("file ") and "not owned" in ln)
+        if res.returncode not in (0, unowned):
+            raise RuntimeError(f"rpm -qf terminou com código inesperado {res.returncode}")
+        return lines
+
     def _releasever(self) -> str:
         listing = json.loads(self._out([*DNF, "history", "list", "--json"]))
         return str(listing[0]["releasever"]) if listing else ""
 
     def repos(self, needed: set[str]) -> list[RepoSpec]:
         files = [f for f in self._out(["ls", "-1", REPO_DIR]).split() if f.endswith(".repo")]
-        owners = self._out(["rpm", "-qf", *[f"{REPO_DIR}/{f}" for f in files]]).splitlines()
+        owners = self._owners(files)
         if len(owners) != len(files):
             raise ValueError("rpm -qf devolveu número de linhas diferente do de arquivos")
         releasever = self._releasever()
