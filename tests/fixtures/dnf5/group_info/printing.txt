@@ -1,0 +1,36 @@
+Id                   : printing
+Name                 : Printing Support
+Description          : Install these tools to enable the system to print or act as a print server.
+Installed            : yes
+Order                : 
+Langonly             : 
+Uservisible          : no
+Repositories         : @System
+Mandatory packages   : cups
+                     : cups-filters
+                     : ghostscript
+Default packages     : bluez-cups
+                     : colord
+                     : cups-browsed
+                     : cups-pk-helper
+                     : gutenprint
+                     : gutenprint-cups
+                     : hplip
+                     : mpage
+                     : nss-mdns
+                     : paps
+                     : samba-client
+                     : system-config-printer-udev
+Optional packages    : a2ps
+                     : c2esp
+                     : cups-pdf
+                     : dymo-cups-drivers
+                     : enscript
+                     : foomatic
+                     : foomatic-db-ppds
+                     : pnm2ppa
+                     : printer-driver-brlaser
+                     : ptouch-driver
+                     : splix
+                     : system-config-printer
+

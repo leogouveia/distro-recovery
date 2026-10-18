@@ -1,0 +1,2 @@
+ID                              Name               Installed
+workstation-product-environment Fedora Workstation       yes

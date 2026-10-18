@@ -1,0 +1,26 @@
+Id                   : multimedia
+Name                 : Multimedia
+Description          : Audio/video framework common to desktops
+Installed            : yes
+Order                : 
+Langonly             : 
+Uservisible          : no
+Repositories         : @System
+Mandatory packages   : PackageKit-gstreamer-plugin
+                     : alsa-ucm
+                     : alsa-utils
+                     : gstreamer1-plugin-dav1d
+                     : gstreamer1-plugin-libav
+                     : gstreamer1-plugin-openh264
+                     : gstreamer1-plugins-bad-free
+                     : gstreamer1-plugins-good
+                     : gstreamer1-plugins-ugly-free
+                     : libva-intel-media-driver
+                     : pipewire-alsa
+                     : pipewire-config-raop
+                     : pipewire-gstreamer
+                     : pipewire-pulseaudio
+                     : pipewire-utils
+                     : wireplumber
+Conditional packages : gstreamer-plugins-espeak
+

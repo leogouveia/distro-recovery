@@ -1,0 +1,1 @@
+fedora-release-workstation-44-18.noarch

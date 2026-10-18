@@ -1,0 +1,15 @@
+Id                   : container-management
+Name                 : Container Management
+Description          : Tools for managing Linux containers
+Installed            : yes
+Order                : 
+Langonly             : 
+Uservisible          : yes
+Repositories         : @System
+Default packages     : podman
+Optional packages    : buildah
+                     : flatpak
+                     : flatpak-builder
+                     : skopeo
+                     : toolbox
+

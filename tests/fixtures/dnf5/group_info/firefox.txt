@@ -1,0 +1,12 @@
+Id                   : firefox
+Name                 : Firefox Web Browser
+Description          : The Firefox web browser
+Installed            : yes
+Order                : 
+Langonly             : 
+Uservisible          : no
+Repositories         : @System
+Mandatory packages   : fedora-bookmarks
+                     : firefox
+Default packages     : libglvnd-gles
+

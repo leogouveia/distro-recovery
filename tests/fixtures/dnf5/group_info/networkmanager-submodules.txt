@@ -1,0 +1,15 @@
+Id                   : networkmanager-submodules
+Name                 : Common NetworkManager Submodules
+Description          : This group contains NetworkManager submodules that are commonly used, but may not be wanted in some streamlined configurations.
+Installed            : yes
+Order                : 
+Langonly             : 
+Uservisible          : no
+Repositories         : @System
+Default packages     : NetworkManager-bluetooth
+                     : NetworkManager-wifi
+                     : NetworkManager-wwan
+                     : dnsmasq
+                     : iptables-nft
+                     : wpa_supplicant
+

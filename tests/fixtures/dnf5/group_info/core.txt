@@ -1,0 +1,52 @@
+Id                   : core
+Name                 : Core
+Description          : Smallest possible installation
+Installed            : yes
+Order                : 
+Langonly             : 
+Uservisible          : no
+Repositories         : @System
+Mandatory packages   : audit
+                     : bash
+                     : coreutils
+                     : curl
+                     : dnf5
+                     : e2fsprogs
+                     : filesystem
+                     : glibc
+                     : hostname
+                     : iproute
+                     : iputils
+                     : kbd
+                     : less
+                     : man-db
+                     : ncurses
+                     : openssh-clients
+                     : openssh-server
+                     : parted
+                     : policycoreutils
+                     : procps-ng
+                     : rootfiles
+                     : rpm
+                     : selinux-policy-targeted
+                     : setup
+                     : shadow-utils
+                     : sssd-common
+                     : sssd-kcm
+                     : sudo
+                     : systemd
+                     : util-linux
+                     : vim-minimal
+Default packages     : NetworkManager
+                     : dnf5-plugins
+                     : dracut-config-rescue
+                     : firewalld
+                     : fwupd
+                     : plymouth
+                     : prefixdevname
+                     : systemd-resolved
+                     : zram-generator-defaults
+Optional packages    : dracut-config-generic
+                     : initial-setup
+                     : initscripts
+

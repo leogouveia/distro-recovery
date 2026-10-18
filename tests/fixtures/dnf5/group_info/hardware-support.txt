@@ -1,0 +1,56 @@
+Id                   : hardware-support
+Name                 : Hardware Support
+Description          : This group is a collection of tools for various hardware specific utilities.
+Installed            : yes
+Order                : 
+Langonly             : 
+Uservisible          : no
+Repositories         : @System
+Default packages     : alsa-sof-firmware
+                     : amd-gpu-firmware
+                     : atheros-firmware
+                     : b43-fwcutter
+                     : b43-openfwwf
+                     : brcmfmac-firmware
+                     : cirrus-audio-firmware
+                     : intel-audio-firmware
+                     : intel-gpu-firmware
+                     : intel-lpmd
+                     : intel-vsc-firmware
+                     : iwlegacy-firmware
+                     : iwlwifi-dvm-firmware
+                     : iwlwifi-mvm-firmware
+                     : libertas-firmware
+                     : mt7xxx-firmware
+                     : nvidia-gpu-firmware
+                     : nxpwireless-firmware
+                     : qcom-wwan-firmware
+                     : realtek-firmware
+                     : tiwilink-firmware
+                     : usb_modeswitch
+Optional packages    : acpi
+                     : acpitool
+                     : alsa-firmware
+                     : atmel-firmware
+                     : cmospwd
+                     : dvb-firmware
+                     : gpsd
+                     : gpsd-clients
+                     : hddtemp
+                     : hdparm
+                     : iscan-firmware
+                     : libifp
+                     : liquidio-firmware
+                     : lsscsi
+                     : mlxsw_spectrum-firmware
+                     : mrvlprestera-firmware
+                     : netronome-firmware
+                     : opensc
+                     : pcsc-lite
+                     : pcsc-lite-ccid
+                     : qcom-accel-firmware
+                     : qed-firmware
+                     : radeontop
+                     : wpan-tools
+                     : zd1211-firmware
+

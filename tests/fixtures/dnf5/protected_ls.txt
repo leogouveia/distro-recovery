@@ -1,0 +1,10 @@
+fedora-workstation.conf
+grub2-efi-ia32.conf
+grub2-efi-x64.conf
+grub2-pc.conf
+grub2-tools-minimal.conf
+selinux-policy-targeted.conf
+setup.conf
+shim.conf
+sudo.conf
+systemd.conf

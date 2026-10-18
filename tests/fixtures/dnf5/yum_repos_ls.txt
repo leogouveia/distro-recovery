@@ -1,0 +1,17 @@
+1password.repo
+chatgpt.repo
+_copr:copr.fedorainfracloud.org:myriad-sun:android-studio.repo
+_copr:copr.fedorainfracloud.org:phracek:PyCharm.repo
+fedora-cisco-openh264.repo
+fedora-recovery-1password.repo
+fedora-recovery-code.repo
+fedora-recovery-copr:copr.fedorainfracloud.org:kylegospo:webapp-manager.repo
+fedora-recovery-gitlab.com_paulcarroty_vscodium_repo.repo
+fedora-recovery-vivaldi.repo
+fedora.repo
+fedora-updates.repo
+fedora-updates-testing.repo
+google-chrome.repo
+rpmfusion-nonfree-nvidia-driver.repo
+rpmfusion-nonfree-steam.repo
+vivaldi.repo

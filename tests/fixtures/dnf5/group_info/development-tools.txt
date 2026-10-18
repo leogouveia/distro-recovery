@@ -1,0 +1,50 @@
+Id                   : development-tools
+Name                 : Development Tools
+Description          : These tools include general development tools such as git and CVS.
+Installed            : yes
+Order                : 
+Langonly             : 
+Uservisible          : yes
+Repositories         : @System
+Mandatory packages   : gettext
+Default packages     : diffstat
+                     : doxygen
+                     : git
+                     : patch
+                     : patchutils
+                     : subversion
+                     : systemtap
+Optional packages    : buildbot
+                     : colordiff
+                     : cvs
+                     : cvs2cl
+                     : cvsps
+                     : darcs
+                     : dejagnu
+                     : expect
+                     : gambas3-ide
+                     : git-annex
+                     : git-cola
+                     : git2cl
+                     : gitg
+                     : gtranslator
+                     : highlight
+                     : lcov
+                     : manedit
+                     : meld
+                     : monotone
+                     : myrepos
+                     : nemiver
+                     : qgit
+                     : quilt
+                     : rapidsvn
+                     : rcs
+                     : robodoc
+                     : scanmem
+                     : subunit
+                     : svn2cl
+                     : tig
+                     : tortoisehg
+                     : translate-toolkit
+                     : utrac
+

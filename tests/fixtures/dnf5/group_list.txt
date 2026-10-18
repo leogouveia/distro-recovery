@@ -1,0 +1,6 @@
+ID                    Name                  Installed
+container-management  Container Management        yes
+desktop-accessibility Desktop accessibility       yes
+development-tools     Development Tools           yes
+libreoffice           LibreOffice                 yes
+Groups: 4 (4 installed, 0 available)

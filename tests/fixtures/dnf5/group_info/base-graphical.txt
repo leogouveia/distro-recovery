@@ -1,0 +1,12 @@
+Id                   : base-graphical
+Name                 : base-graphical
+Description          : Common packages for any graphical session
+Installed            : yes
+Order                : 
+Langonly             : 
+Uservisible          : no
+Repositories         : @System
+Mandatory packages   : mesa-dri-drivers
+                     : mesa-vulkan-drivers
+                     : plymouth-system-theme
+

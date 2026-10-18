@@ -1,0 +1,17 @@
+file /etc/yum.repos.d/1password.repo is not owned by any package
+chatgpt-26.1007.71326-1.x86_64
+file /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:myriad-sun:android-studio.repo is not owned by any package
+fedora-workstation-repositories-38-9.fc44.x86_64
+fedora-repos-44-2.noarch
+file /etc/yum.repos.d/fedora-recovery-1password.repo is not owned by any package
+file /etc/yum.repos.d/fedora-recovery-code.repo is not owned by any package
+file /etc/yum.repos.d/fedora-recovery-copr:copr.fedorainfracloud.org:kylegospo:webapp-manager.repo is not owned by any package
+file /etc/yum.repos.d/fedora-recovery-gitlab.com_paulcarroty_vscodium_repo.repo is not owned by any package
+file /etc/yum.repos.d/fedora-recovery-vivaldi.repo is not owned by any package
+fedora-repos-44-2.noarch
+fedora-repos-44-2.noarch
+fedora-repos-44-2.noarch
+fedora-workstation-repositories-38-9.fc44.x86_64
+fedora-workstation-repositories-38-9.fc44.x86_64
+fedora-workstation-repositories-38-9.fc44.x86_64
+file /etc/yum.repos.d/vivaldi.repo is not owned by any package

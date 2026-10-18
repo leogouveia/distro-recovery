@@ -1,0 +1,402 @@
+commands:
+- argv:
+  - "dnf5"
+  - "--assumeno"
+  - "repoquery"
+  - "--installed"
+  - "--queryformat"
+  - "%{name}\t%{arch}\t%{reason}\t%{from_repo}\t%{vendor}\n"
+  file: "installed.tsv"
+  returncode: 0
+- argv:
+  - "dnf5"
+  - "--assumeno"
+  - "group"
+  - "list"
+  - "--installed"
+  file: "group_list.txt"
+  returncode: 0
+- argv:
+  - "dnf5"
+  - "--assumeno"
+  - "environment"
+  - "list"
+  - "--installed"
+  file: "env_list.txt"
+  returncode: 0
+- argv:
+  - "dnf5"
+  - "--assumeno"
+  - "environment"
+  - "info"
+  - "workstation-product-environment"
+  file: "env_info.txt"
+  returncode: 0
+- argv:
+  - "dnf5"
+  - "--assumeno"
+  - "group"
+  - "info"
+  - "base-graphical"
+  file: "group_info/base-graphical.txt"
+  returncode: 0
+- argv:
+  - "dnf5"
+  - "--assumeno"
+  - "group"
+  - "info"
+  - "container-management"
+  file: "group_info/container-management.txt"
+  returncode: 0
+- argv:
+  - "dnf5"
+  - "--assumeno"
+  - "group"
+  - "info"
+  - "core"
+  file: "group_info/core.txt"
+  returncode: 0
+- argv:
+  - "dnf5"
+  - "--assumeno"
+  - "group"
+  - "info"
+  - "desktop-accessibility"
+  file: "group_info/desktop-accessibility.txt"
+  returncode: 0
+- argv:
+  - "dnf5"
+  - "--assumeno"
+  - "group"
+  - "info"
+  - "development-tools"
+  file: "group_info/development-tools.txt"
+  returncode: 0
+- argv:
+  - "dnf5"
+  - "--assumeno"
+  - "group"
+  - "info"
+  - "firefox"
+  file: "group_info/firefox.txt"
+  returncode: 0
+- argv:
+  - "dnf5"
+  - "--assumeno"
+  - "group"
+  - "info"
+  - "fonts"
+  file: "group_info/fonts.txt"
+  returncode: 0
+- argv:
+  - "dnf5"
+  - "--assumeno"
+  - "group"
+  - "info"
+  - "gnome-desktop"
+  file: "group_info/gnome-desktop.txt"
+  returncode: 0
+- argv:
+  - "dnf5"
+  - "--assumeno"
+  - "group"
+  - "info"
+  - "guest-desktop-agents"
+  file: "group_info/guest-desktop-agents.txt"
+  returncode: 0
+- argv:
+  - "dnf5"
+  - "--assumeno"
+  - "group"
+  - "info"
+  - "hardware-support"
+  file: "group_info/hardware-support.txt"
+  returncode: 0
+- argv:
+  - "dnf5"
+  - "--assumeno"
+  - "group"
+  - "info"
+  - "libreoffice"
+  file: "group_info/libreoffice.txt"
+  returncode: 0
+- argv:
+  - "dnf5"
+  - "--assumeno"
+  - "group"
+  - "info"
+  - "multimedia"
+  file: "group_info/multimedia.txt"
+  returncode: 0
+- argv:
+  - "dnf5"
+  - "--assumeno"
+  - "group"
+  - "info"
+  - "networkmanager-submodules"
+  file: "group_info/networkmanager-submodules.txt"
+  returncode: 0
+- argv:
+  - "dnf5"
+  - "--assumeno"
+  - "group"
+  - "info"
+  - "printing"
+  file: "group_info/printing.txt"
+  returncode: 0
+- argv:
+  - "dnf5"
+  - "--assumeno"
+  - "group"
+  - "info"
+  - "workstation-product"
+  file: "group_info/workstation-product.txt"
+  returncode: 0
+- argv:
+  - "dnf5"
+  - "--assumeno"
+  - "history"
+  - "list"
+  - "--json"
+  file: "history_list.json"
+  returncode: 0
+- argv:
+  - "dnf5"
+  - "--assumeno"
+  - "history"
+  - "info"
+  - "45"
+  - "44"
+  - "43"
+  - "42"
+  - "41"
+  - "40"
+  - "39"
+  - "38"
+  - "37"
+  - "36"
+  - "35"
+  - "34"
+  - "33"
+  - "32"
+  - "31"
+  - "30"
+  - "29"
+  - "28"
+  - "27"
+  - "26"
+  - "25"
+  - "24"
+  - "23"
+  - "22"
+  - "21"
+  - "20"
+  - "19"
+  - "18"
+  - "17"
+  - "16"
+  - "15"
+  - "14"
+  - "13"
+  - "12"
+  - "11"
+  - "10"
+  - "9"
+  - "8"
+  - "7"
+  - "6"
+  - "5"
+  - "4"
+  - "3"
+  - "2"
+  - "1"
+  - "--json"
+  file: "history_info.json"
+  returncode: 0
+- argv:
+  - "dnf5"
+  - "--assumeno"
+  - "leaves"
+  file: "leaves.txt"
+  returncode: 0
+- argv:
+  - "ls"
+  - "-1"
+  - "/etc/yum.repos.d"
+  file: "yum_repos_ls.txt"
+  returncode: 0
+- argv:
+  - "rpm"
+  - "-qf"
+  - "/etc/yum.repos.d/1password.repo"
+  - "/etc/yum.repos.d/chatgpt.repo"
+  - "/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:myriad-sun:android-studio.repo"
+  - "/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:phracek:PyCharm.repo"
+  - "/etc/yum.repos.d/fedora-cisco-openh264.repo"
+  - "/etc/yum.repos.d/fedora-recovery-1password.repo"
+  - "/etc/yum.repos.d/fedora-recovery-code.repo"
+  - "/etc/yum.repos.d/fedora-recovery-copr:copr.fedorainfracloud.org:kylegospo:webapp-manager.repo"
+  - "/etc/yum.repos.d/fedora-recovery-gitlab.com_paulcarroty_vscodium_repo.repo"
+  - "/etc/yum.repos.d/fedora-recovery-vivaldi.repo"
+  - "/etc/yum.repos.d/fedora.repo"
+  - "/etc/yum.repos.d/fedora-updates.repo"
+  - "/etc/yum.repos.d/fedora-updates-testing.repo"
+  - "/etc/yum.repos.d/google-chrome.repo"
+  - "/etc/yum.repos.d/rpmfusion-nonfree-nvidia-driver.repo"
+  - "/etc/yum.repos.d/rpmfusion-nonfree-steam.repo"
+  - "/etc/yum.repos.d/vivaldi.repo"
+  file: "rpm_qf.txt"
+  returncode: 0
+- argv:
+  - "cat"
+  - "/etc/yum.repos.d/1password.repo"
+  file: "repos/1password.repo"
+  returncode: 0
+- argv:
+  - "cat"
+  - "/etc/yum.repos.d/chatgpt.repo"
+  file: "repos/chatgpt.repo"
+  returncode: 0
+- argv:
+  - "cat"
+  - "/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:myriad-sun:android-studio.repo"
+  file: "repos/_copr:copr.fedorainfracloud.org:myriad-sun:android-studio.repo"
+  returncode: 0
+- argv:
+  - "cat"
+  - "/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:phracek:PyCharm.repo"
+  file: "repos/_copr:copr.fedorainfracloud.org:phracek:PyCharm.repo"
+  returncode: 0
+- argv:
+  - "cat"
+  - "/etc/yum.repos.d/fedora-cisco-openh264.repo"
+  file: "repos/fedora-cisco-openh264.repo"
+  returncode: 0
+- argv:
+  - "cat"
+  - "/etc/yum.repos.d/fedora-recovery-1password.repo"
+  file: "repos/fedora-recovery-1password.repo"
+  returncode: 0
+- argv:
+  - "cat"
+  - "/etc/yum.repos.d/fedora-recovery-code.repo"
+  file: "repos/fedora-recovery-code.repo"
+  returncode: 0
+- argv:
+  - "cat"
+  - "/etc/yum.repos.d/fedora-recovery-copr:copr.fedorainfracloud.org:kylegospo:webapp-manager.repo"
+  file: "repos/fedora-recovery-copr:copr.fedorainfracloud.org:kylegospo:webapp-manager.repo"
+  returncode: 0
+- argv:
+  - "cat"
+  - "/etc/yum.repos.d/fedora-recovery-gitlab.com_paulcarroty_vscodium_repo.repo"
+  file: "repos/fedora-recovery-gitlab.com_paulcarroty_vscodium_repo.repo"
+  returncode: 0
+- argv:
+  - "cat"
+  - "/etc/yum.repos.d/fedora-recovery-vivaldi.repo"
+  file: "repos/fedora-recovery-vivaldi.repo"
+  returncode: 0
+- argv:
+  - "cat"
+  - "/etc/yum.repos.d/fedora.repo"
+  file: "repos/fedora.repo"
+  returncode: 0
+- argv:
+  - "cat"
+  - "/etc/yum.repos.d/fedora-updates.repo"
+  file: "repos/fedora-updates.repo"
+  returncode: 0
+- argv:
+  - "cat"
+  - "/etc/yum.repos.d/fedora-updates-testing.repo"
+  file: "repos/fedora-updates-testing.repo"
+  returncode: 0
+- argv:
+  - "cat"
+  - "/etc/yum.repos.d/google-chrome.repo"
+  file: "repos/google-chrome.repo"
+  returncode: 0
+- argv:
+  - "cat"
+  - "/etc/yum.repos.d/rpmfusion-nonfree-nvidia-driver.repo"
+  file: "repos/rpmfusion-nonfree-nvidia-driver.repo"
+  returncode: 0
+- argv:
+  - "cat"
+  - "/etc/yum.repos.d/rpmfusion-nonfree-steam.repo"
+  file: "repos/rpmfusion-nonfree-steam.repo"
+  returncode: 0
+- argv:
+  - "cat"
+  - "/etc/yum.repos.d/vivaldi.repo"
+  file: "repos/vivaldi.repo"
+  returncode: 0
+- argv:
+  - "rpmkeys"
+  - "--list"
+  file: "rpmkeys.txt"
+  returncode: 0
+- argv:
+  - "ls"
+  - "-1"
+  - "/etc/dnf/protected.d"
+  file: "protected_ls.txt"
+  returncode: 0
+- argv:
+  - "cat"
+  - "/etc/dnf/protected.d/fedora-workstation.conf"
+  file: "protected.d/fedora-workstation.conf"
+  returncode: 0
+- argv:
+  - "cat"
+  - "/etc/dnf/protected.d/grub2-efi-ia32.conf"
+  file: "protected.d/grub2-efi-ia32.conf"
+  returncode: 0
+- argv:
+  - "cat"
+  - "/etc/dnf/protected.d/grub2-efi-x64.conf"
+  file: "protected.d/grub2-efi-x64.conf"
+  returncode: 0
+- argv:
+  - "cat"
+  - "/etc/dnf/protected.d/grub2-pc.conf"
+  file: "protected.d/grub2-pc.conf"
+  returncode: 0
+- argv:
+  - "cat"
+  - "/etc/dnf/protected.d/grub2-tools-minimal.conf"
+  file: "protected.d/grub2-tools-minimal.conf"
+  returncode: 0
+- argv:
+  - "cat"
+  - "/etc/dnf/protected.d/selinux-policy-targeted.conf"
+  file: "protected.d/selinux-policy-targeted.conf"
+  returncode: 0
+- argv:
+  - "cat"
+  - "/etc/dnf/protected.d/setup.conf"
+  file: "protected.d/setup.conf"
+  returncode: 0
+- argv:
+  - "cat"
+  - "/etc/dnf/protected.d/shim.conf"
+  file: "protected.d/shim.conf"
+  returncode: 0
+- argv:
+  - "cat"
+  - "/etc/dnf/protected.d/sudo.conf"
+  file: "protected.d/sudo.conf"
+  returncode: 0
+- argv:
+  - "cat"
+  - "/etc/dnf/protected.d/systemd.conf"
+  file: "protected.d/systemd.conf"
+  returncode: 0
+- argv:
+  - "rpm"
+  - "-q"
+  - "--whatprovides"
+  - "system-release"
+  file: "whatprovides.txt"
+  returncode: 0

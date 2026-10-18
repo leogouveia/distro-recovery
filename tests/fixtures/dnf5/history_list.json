@@ -1,0 +1,452 @@
+[
+  {
+    "id":45,
+    "command_line":"dnf install pavucontrol",
+    "start_time":1792253394,
+    "end_time":1792253395,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":1
+  },
+  {
+    "id":44,
+    "command_line":"dnf install vlc",
+    "start_time":1792247956,
+    "end_time":1792247957,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":42
+  },
+  {
+    "id":43,
+    "command_line":"dnf -y install --nogpgcheck --disablerepo=* \/tmp\/akmods.JUPvzn7L\/results\/kmod-nvidia-7.2.11-200.fc44.x86_64-615.71.09-3.fc44.x86_64.rpm",
+    "start_time":1792246813,
+    "end_time":1792246817,
+    "user_id":0,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":1
+  },
+  {
+    "id":42,
+    "command_line":"dnf update",
+    "start_time":1792246746,
+    "end_time":1792246797,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":106
+  },
+  {
+    "id":41,
+    "command_line":"dnf install android-studio",
+    "start_time":1792200694,
+    "end_time":1792200703,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":1
+  },
+  {
+    "id":40,
+    "command_line":"dnf group install development-tools",
+    "start_time":1792121705,
+    "end_time":1792121707,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":30
+  },
+  {
+    "id":39,
+    "command_line":"dnf remove nix nix-daemon",
+    "start_time":1792121533,
+    "end_time":1792121534,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":15
+  },
+  {
+    "id":38,
+    "command_line":"dnf install nix nix-daemon",
+    "start_time":1792120733,
+    "end_time":1792120734,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":15
+  },
+  {
+    "id":37,
+    "command_line":"dnf install rust cargo",
+    "start_time":1792108600,
+    "end_time":1792108602,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":3
+  },
+  {
+    "id":36,
+    "command_line":"dnf install nvtop",
+    "start_time":1792108513,
+    "end_time":1792108514,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":1
+  },
+  {
+    "id":35,
+    "command_line":"dnf install htop",
+    "start_time":1792108489,
+    "end_time":1792108489,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":2
+  },
+  {
+    "id":34,
+    "command_line":"dnf install btop",
+    "start_time":1792108411,
+    "end_time":1792108412,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":2
+  },
+  {
+    "id":33,
+    "command_line":"dnf install .\/chatgpt.x86_64.rpm",
+    "start_time":1792104729,
+    "end_time":1792104745,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":1
+  },
+  {
+    "id":32,
+    "command_line":"dnf5daemon-server",
+    "start_time":1792102995,
+    "end_time":1792103175,
+    "user_id":0,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":1524
+  },
+  {
+    "id":31,
+    "command_line":"dnf5 --setopt=defaultyes=False --setopt=gpgkey_dns_verification=False -y --disable-plugin=* --repo=fedora,updates --setopt=*.gpgkey= --setopt=*.pkg_gpgcheck=True --setopt=obsoletes=False install bats ShellCheck shfmt kcov",
+    "start_time":1792082379,
+    "end_time":1792082380,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":8
+  },
+  {
+    "id":30,
+    "command_line":"dnf5 --setopt=obsoletes=False --exclude=kernel*,kmod*,akmod*,*nvidia*,*firmware*,xorg-x11-drv-* install 1password code codium vivaldi-stable webapp-manager --setopt=assumeyes=False --setopt=defaultyes=False --setopt=gpgkey_dns_verification=False",
+    "start_time":1792082308,
+    "end_time":1792082326,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":69
+  },
+  {
+    "id":29,
+    "command_line":"dnf -y install --nogpgcheck --disablerepo=* \/tmp\/akmods.aahG6kYs\/results\/kmod-nvidia-7.2.10-200.fc44.x86_64-615.71.09-3.fc44.x86_64.rpm",
+    "start_time":1792077015,
+    "end_time":1792077017,
+    "user_id":0,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":1
+  },
+  {
+    "id":28,
+    "command_line":"dnf5 --setopt=obsoletes=False install akmod-nvidia xorg-x11-drv-nvidia-cuda",
+    "start_time":1792076969,
+    "end_time":1792076997,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":130
+  },
+  {
+    "id":27,
+    "command_line":"dnf5 --setopt=obsoletes=False --exclude=kernel*,kmod*,akmod*,*nvidia*,*firmware*,xorg-x11-drv-* install zsh",
+    "start_time":1792076938,
+    "end_time":1792076939,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":1
+  },
+  {
+    "id":26,
+    "command_line":"dnf5 --setopt=obsoletes=False --exclude=kernel*,kmod*,akmod*,*nvidia*,*firmware*,xorg-x11-drv-* install webkit2gtk4.1-devel",
+    "start_time":1792076933,
+    "end_time":1792076934,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":25
+  },
+  {
+    "id":25,
+    "command_line":"dnf5 --setopt=obsoletes=False --exclude=kernel*,kmod*,akmod*,*nvidia*,*firmware*,xorg-x11-drv-* install vim-enhanced",
+    "start_time":1792076923,
+    "end_time":1792076926,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":9
+  },
+  {
+    "id":24,
+    "command_line":"dnf5 --setopt=obsoletes=False --exclude=kernel*,kmod*,akmod*,*nvidia*,*firmware*,xorg-x11-drv-* install python3-setuptools",
+    "start_time":1792076919,
+    "end_time":1792076919,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":1
+  },
+  {
+    "id":23,
+    "command_line":"dnf5 --setopt=obsoletes=False --exclude=kernel*,kmod*,akmod*,*nvidia*,*firmware*,xorg-x11-drv-* install librsvg2-devel",
+    "start_time":1792076916,
+    "end_time":1792076917,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":6
+  },
+  {
+    "id":22,
+    "command_line":"dnf5 --setopt=obsoletes=False --exclude=kernel*,kmod*,akmod*,*nvidia*,*firmware*,xorg-x11-drv-* install libappindicator-gtk3-devel",
+    "start_time":1792076913,
+    "end_time":1792076913,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":5
+  },
+  {
+    "id":21,
+    "command_line":"dnf5 --setopt=obsoletes=False --exclude=kernel*,kmod*,akmod*,*nvidia*,*firmware*,xorg-x11-drv-* install gtk3-devel",
+    "start_time":1792076904,
+    "end_time":1792076910,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":66
+  },
+  {
+    "id":20,
+    "command_line":"dnf5 --setopt=obsoletes=False --exclude=kernel*,kmod*,akmod*,*nvidia*,*firmware*,xorg-x11-drv-* install google-chrome-stable",
+    "start_time":1792076875,
+    "end_time":1792076879,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":2
+  },
+  {
+    "id":19,
+    "command_line":"dnf5 --setopt=obsoletes=False --exclude=kernel*,kmod*,akmod*,*nvidia*,*firmware*,xorg-x11-drv-* install gnome-tweaks",
+    "start_time":1792076866,
+    "end_time":1792076866,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":1
+  },
+  {
+    "id":18,
+    "command_line":"dnf5 --setopt=obsoletes=False --exclude=kernel*,kmod*,akmod*,*nvidia*,*firmware*,xorg-x11-drv-* install gnome-shell-extension-user-theme",
+    "start_time":1792076862,
+    "end_time":1792076863,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":13
+  },
+  {
+    "id":17,
+    "command_line":"dnf5 --setopt=obsoletes=False --exclude=kernel*,kmod*,akmod*,*nvidia*,*firmware*,xorg-x11-drv-* install gnome-shell-extension-dash-to-dock",
+    "start_time":1792076860,
+    "end_time":1792076861,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":3
+  },
+  {
+    "id":16,
+    "command_line":"dnf5 --setopt=obsoletes=False --exclude=kernel*,kmod*,akmod*,*nvidia*,*firmware*,xorg-x11-drv-* install gnome-extensions-app",
+    "start_time":1792076858,
+    "end_time":1792076859,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":1
+  },
+  {
+    "id":15,
+    "command_line":"dnf5 --setopt=obsoletes=False --exclude=kernel*,kmod*,akmod*,*nvidia*,*firmware*,xorg-x11-drv-* install gdk-pixbuf2-devel",
+    "start_time":1792076854,
+    "end_time":1792076855,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":19
+  },
+  {
+    "id":14,
+    "command_line":"dnf5 --setopt=obsoletes=False --exclude=kernel*,kmod*,akmod*,*nvidia*,*firmware*,xorg-x11-drv-* install eza",
+    "start_time":1792076850,
+    "end_time":1792076851,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":1
+  },
+  {
+    "id":13,
+    "command_line":"dnf5 --setopt=obsoletes=False --exclude=kernel*,kmod*,akmod*,*nvidia*,*firmware*,xorg-x11-drv-* install epiphany",
+    "start_time":1792076847,
+    "end_time":1792076848,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":3
+  },
+  {
+    "id":12,
+    "command_line":"dnf5 --setopt=obsoletes=False --exclude=kernel*,kmod*,akmod*,*nvidia*,*firmware*,xorg-x11-drv-* install chromium",
+    "start_time":1792076837,
+    "end_time":1792076840,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":6
+  },
+  {
+    "id":11,
+    "command_line":"dnf5 --setopt=obsoletes=False --exclude=kernel*,kmod*,akmod*,*nvidia*,*firmware*,xorg-x11-drv-* install chezmoi",
+    "start_time":1792076810,
+    "end_time":1792076811,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":1
+  },
+  {
+    "id":10,
+    "command_line":"dnf5 --setopt=obsoletes=False --exclude=kernel*,kmod*,akmod*,*nvidia*,*firmware*,xorg-x11-drv-* install cairo-devel",
+    "start_time":1792076778,
+    "end_time":1792076780,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":84
+  },
+  {
+    "id":9,
+    "command_line":"dnf5 --setopt=obsoletes=False --exclude=kernel*,kmod*,akmod*,*nvidia*,*firmware*,xorg-x11-drv-* install blackbox-terminal",
+    "start_time":1792076771,
+    "end_time":1792076771,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":1
+  },
+  {
+    "id":8,
+    "command_line":"dnf5 --setopt=obsoletes=False --exclude=kernel*,kmod*,akmod*,*nvidia*,*firmware*,xorg-x11-drv-* install bat",
+    "start_time":1792076768,
+    "end_time":1792076768,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":3
+  },
+  {
+    "id":7,
+    "command_line":"dnf5 --setopt=obsoletes=False --exclude=kernel*,kmod*,akmod*,*nvidia*,*firmware*,xorg-x11-drv-* install age",
+    "start_time":1792076765,
+    "end_time":1792076765,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":1
+  },
+  {
+    "id":6,
+    "command_line":"dnf5 --setopt=obsoletes=False --exclude=kernel*,kmod*,akmod*,*nvidia*,*firmware*,xorg-x11-drv-* install adw-gtk3-theme",
+    "start_time":1792076761,
+    "end_time":1792076761,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":1
+  },
+  {
+    "id":5,
+    "command_line":"dnf install file-roller zstd",
+    "start_time":1792075816,
+    "end_time":1792075817,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":1
+  },
+  {
+    "id":4,
+    "command_line":"dnf install gh",
+    "start_time":1792071777,
+    "end_time":1792071778,
+    "user_id":1000,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":1
+  },
+  {
+    "id":3,
+    "command_line":"dnf5daemon-server",
+    "start_time":1792071711,
+    "end_time":1792071712,
+    "user_id":0,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":13
+  },
+  {
+    "id":2,
+    "command_line":"dnf5 --config \/kiwi_dnf5.config -y --disable-plugin=priorities,versionlock --releasever=44 --exclude=device-mapper-multipath --exclude=fcoe-utils --exclude=gfs2-utils --exclude=gfs2-utils --exclude=kernel-*debug* --exclude=python3-boto3 --exclude=qemu-user-static --exclude=reiserfs-utils install aajohan-comfortaa-fonts anaconda-install-env-deps anaconda-live btrfs-progs dracut-live glibc-all-langpacks grub2-efi-ia32 grub2-efi-ia32-cdboot grub2-efi-ia32-modules grub2-efi-x64 grub2-efi-x64-cdboot grub2-efi-x64-modules grub2-pc grub2-pc-modules isomd5sum kernel kernel-core kernel-modules kernel-modules-extra livesys-scripts mediawriter shim-signed-ia32 shim-signed-x64 systemd-oomd-defaults systemd-resolved udisks2-btrfs @anaconda-tools @fonts @guest-desktop-agents @hardware-support @multimedia @networkmanager-submodules @printing @standard @workstation-product-environment",
+    "start_time":1776866443,
+    "end_time":1776866803,
+    "user_id":0,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":1721
+  },
+  {
+    "id":1,
+    "command_line":"dnf5 --config \/builddir\/result\/image\/build\/image-root\/kiwi_dnf5.config -y --disable-plugin=priorities,versionlock --installroot \/builddir\/result\/image\/build\/image-root --releasever=44 --exclude=device-mapper-multipath --exclude=fcoe-utils --exclude=gfs2-utils install dnf5 fedora-release-workstation filesystem grubby @anaconda-tools",
+    "start_time":1776866332,
+    "end_time":1776866348,
+    "user_id":0,
+    "status":"Ok",
+    "releasever":"44",
+    "altered_count":278
+  }
+]
