@@ -20,6 +20,7 @@ class Decisions:
     include: frozenset[str] = frozenset()
     exclude: frozenset[str] = frozenset()
     repos_exclude: frozenset[str] = frozenset()
+    repos_gpgkey: dict[str, str] = field(default_factory=dict)
     renames: dict[str, str] = field(default_factory=dict)
     swaps: list[dict[str, str]] = field(default_factory=list)
 
@@ -40,6 +41,11 @@ def load_decisions(path: Path) -> Decisions:
     repos = data.get("repos") or {}
     if not isinstance(repos, dict):
         raise DecisionsError("repos: esperava um mapeamento")
+    gpgkeys = repos.get("gpgkey") or {}
+    if not isinstance(gpgkeys, dict) or not all(
+        isinstance(k, str) and isinstance(v, str) for k, v in gpgkeys.items()
+    ):
+        raise DecisionsError("repos.gpgkey: esperava um mapeamento id -> endereço (strings)")
     renames, swaps = data.get("renames") or {}, data.get("swaps") or []
     if not isinstance(renames, dict) or not isinstance(swaps, list):
         raise DecisionsError("renames deve ser mapeamento e swaps uma lista")
@@ -47,6 +53,7 @@ def load_decisions(path: Path) -> Decisions:
         include=_names(data, "include", ""),
         exclude=_names(data, "exclude", ""),
         repos_exclude=_names(repos, "exclude", "repos."),
+        repos_gpgkey=dict(gpgkeys),
         renames={str(k): str(v) for k, v in renames.items()},
         swaps=[dict(s) for s in swaps],
     )

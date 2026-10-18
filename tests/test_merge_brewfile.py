@@ -51,3 +51,17 @@ def test_load_decisions_rejects_bad_shapes(tmp_path, body):
     f.write_text(body)
     with pytest.raises(DecisionsError):
         load_decisions(f)
+
+
+def test_load_decisions_repo_gpgkey_overrides(tmp_path):
+    f = tmp_path / "decisions.yml"
+    f.write_text('repos:\n  gpgkey:\n    code: "https://example.org/k.asc"\n')
+    assert load_decisions(f).repos_gpgkey == {"code": "https://example.org/k.asc"}
+
+
+@pytest.mark.parametrize("body", ["repos:\n  gpgkey: [x]\n", "repos:\n  gpgkey: {code: 1}\n"])
+def test_load_decisions_rejects_bad_gpgkey_overrides(tmp_path, body):
+    f = tmp_path / "decisions.yml"
+    f.write_text(body)
+    with pytest.raises(DecisionsError):
+        load_decisions(f)

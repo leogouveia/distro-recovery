@@ -11,9 +11,11 @@ from distro_recovery.backends.base import CommandNotInFixtures, FixtureRunner, S
 from distro_recovery.backends.dnf5 import Dnf5Backend
 from distro_recovery.brewfile import parse_brewfile
 from distro_recovery.classify import Context, classify_all, split_repos
+from distro_recovery.keys import fetch_key, key_fingerprints
 from distro_recovery.merge import load_decisions
 from distro_recovery.model import Confidence
 from distro_recovery.render import render_fedora, render_meta, render_pending
+from distro_recovery.repokeys import resolve_gpgkeys, verify_keys
 
 app = typer.Typer(help="Inventário e restauração de aplicativos instalados.", no_args_is_help=True)
 
@@ -48,6 +50,9 @@ def backup(
         None, "--from-fixtures", help="Lê as saídas de comandos de um diretório de fixtures."
     ),
     brewfile: Path | None = typer.Option(None, "--brewfile", help="Brewfile a comparar."),
+    verify_keys_: bool = typer.Option(
+        False, "--verify-keys", help="Confere, com internet, os endereços das chaves GPG."
+    ),
     verbose: bool = typer.Option(False, "--verbose", help="Lista também os pacotes excluídos."),
 ) -> None:
     """Inventaria o sistema e reescreve `generated/`. Nunca escreve em decisions.yml."""
@@ -80,7 +85,16 @@ def backup(
             brew=brew,
         )
         results = classify_all(installed, ctx)
-        specs = backend.repos(_needed_repos({p.from_repo for p in installed}))
+        specs = resolve_gpgkeys(
+            backend.repos(_needed_repos({p.from_repo for p in installed})), decisions.repos_gpgkey
+        )
+        key_warnings = (
+            verify_keys(
+                specs, set(backend.installed_key_fingerprints()), fetch_key, key_fingerprints
+            )
+            if verify_keys_
+            else None
+        )
     except typer.Exit:
         raise
     except (OSError, ValueError, RuntimeError, CommandNotInFixtures) as exc:
@@ -119,6 +133,12 @@ def backup(
         f"backup: {counts['packages']} pacotes, {counts['groups']} grupos, "
         f"{counts['repos']} repositórios -> {gen}"
     )
+    if key_warnings is not None:
+        for repo_id, ws in sorted(key_warnings.items()):
+            for w in ws:
+                typer.echo(f"  aviso: {repo_id}: {w}")
+        checked = len([s for s in specs if any(u.startswith("https://") for u in s.gpgkey_urls)])
+        typer.echo(f"chaves conferidas: {checked - len(key_warnings)} de {checked} repositórios")
     if verbose:
         for r in results:
             if r.confidence is Confidence.EXCLUDED:

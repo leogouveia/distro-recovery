@@ -239,6 +239,9 @@ class Dnf5Backend:
             image_packages=frozenset(image_packages),
         )
 
+    def installed_key_fingerprints(self) -> frozenset[str]:
+        return frozenset(fp for fp, _ in parse_rpmkeys(self._out(["rpmkeys", "--list"])))
+
     def leaves(self) -> frozenset[str]:
         return parse_leaves(self._out([*DNF, "leaves"]))
 
@@ -310,7 +313,9 @@ class Dnf5Backend:
         urls = [u for u in (baseurl, *keys, opts.get("metalink"), opts.get("mirrorlist")) if u]
         if any(_has_credentials(u) for u in urls):
             warnings.append("credentials_in_url: URL contém credenciais")
-        if package is None and keys and all(k.startswith("file://") for k in keys):
+        if kind is RepoKind.COPR:
+            keys = tuple(k for k in keys if not k.startswith("file://"))  # `copr enable` cuida
+        elif package is None and keys and all(k.startswith("file://") for k in keys):
             warnings.append("local_gpgkey: chave só existe nesta máquina (file://), sem URL remota")
         if opts.get("gpgcheck", "1").strip() == "0":
             warnings.append("gpgcheck_disabled: gpgcheck=0")

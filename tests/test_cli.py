@@ -132,10 +132,49 @@ def test_other_commands_are_stubs_for_now(cmd):
     assert res.exit_code == 1 and "não implementado" in res.output
 
 
-def test_repos_with_non_portable_keys_go_to_pending(tmp_path):
+def test_vscode_and_vscodium_use_known_vendor_key_urls(tmp_path):
+    assert run(tmp_path).exit_code == 2  # só o chatgpt pendente
+    repos = {r["id"]: r for r in gen(tmp_path, "fedora.yml")["repos"]}
+    assert repos["code"]["gpgkey_urls"] == ["https://packages.microsoft.com/keys/microsoft.asc"]
+    assert repos["gitlab.com_paulcarroty_vscodium_repo"]["gpgkey_urls"][0].startswith("https://")
+    webapp = repos["copr:copr.fedorainfracloud.org:kylegospo:webapp-manager"]
+    assert "gpgkey_urls" not in webapp  # COPR: `copr enable` cuida da chave
+    assert gen(tmp_path, "pending.yml")["repos"] == []
+
+
+def test_decisions_gpgkey_override_is_used(tmp_path):
+    (tmp_path / "decisions.yml").write_text(
+        'repos:\n  gpgkey:\n    code: "https://example.org/k.asc"\n'
+    )
     run(tmp_path)
-    ok = {r["id"] for r in gen(tmp_path, "fedora.yml")["repos"]}
-    pending = {r["id"]: r for r in gen(tmp_path, "pending.yml")["repos"]}
-    assert "code" in pending and "code" not in ok
-    assert any(w.startswith("local_gpgkey") for w in pending["code"]["warnings"])
-    assert "vivaldi" in ok  # tem chave remota
+    repos = {r["id"]: r for r in gen(tmp_path, "fedora.yml")["repos"]}
+    assert repos["code"]["gpgkey_urls"] == ["https://example.org/k.asc"]
+
+
+def test_only_chatgpt_is_pending_now(tmp_path):
+    run(tmp_path)
+    assert [p["name"] for p in gen(tmp_path, "pending.yml")["packages"]] == ["chatgpt"]
+
+
+def test_verify_keys_is_off_by_default_and_never_hits_the_network(tmp_path, monkeypatch):
+    monkeypatch.setattr(cli, "fetch_key", lambda url: 1 / 0)
+    assert run(tmp_path).exit_code == 2
+
+
+def test_verify_keys_reports_mismatch_without_changing_exit_code(tmp_path, monkeypatch):
+    monkeypatch.setattr(cli, "fetch_key", lambda url: b"k")
+    monkeypatch.setattr(cli, "key_fingerprints", lambda b: ["cc" * 20])
+    res = run(tmp_path, "--verify-keys")
+    assert res.exit_code == 2, res.output
+    assert "gpgkey_mismatch" in res.output and "code" in res.output
+
+
+def test_verify_keys_ok_prints_confirmation(tmp_path, monkeypatch):
+    from distro_recovery.backends.dnf5 import parse_rpmkeys
+
+    installed = [fp for fp, _ in parse_rpmkeys((FIX / "rpmkeys.txt").read_text())]
+    monkeypatch.setattr(cli, "fetch_key", lambda url: b"k")
+    monkeypatch.setattr(cli, "key_fingerprints", lambda b: installed)
+    res = run(tmp_path, "--verify-keys")
+    assert "gpgkey_mismatch" not in res.output and "gpgkey_unreachable" not in res.output
+    assert "chaves conferidas" in res.output

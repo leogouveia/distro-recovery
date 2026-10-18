@@ -260,3 +260,17 @@ def test_copr_fingerprint_matched_by_key_uid(backend):
 def test_non_copr_repo_gets_no_guessed_fingerprint(backend):
     spec = {r.id: r for r in backend.repos({"vivaldi"})}["vivaldi"]
     assert spec.gpgkeys == ()
+
+
+def test_copr_repo_never_needs_a_key_url():
+    spec = _spec(
+        {"gpgkey": "file:///etc/pki/rpm-gpg/fedora-recovery-x-0.gpg"}, sid="copr:h.org:o:p"
+    )
+    assert spec.kind is RepoKind.COPR
+    assert spec.gpgkey_urls == ()  # `copr enable` importa a chave certa
+    assert not any(w.startswith("local_gpgkey") for w in spec.warnings)
+
+
+def test_copr_keeps_remote_key_url():
+    spec = _spec({"gpgkey": "https://h.org/pubkey.gpg"}, sid="copr:h.org:o:p")
+    assert spec.gpgkey_urls == ("https://h.org/pubkey.gpg",)

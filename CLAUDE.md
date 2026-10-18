@@ -112,6 +112,10 @@ runner injetável (testes usam fixtures).
 - `fedora-workstation-repositories` distribui google-chrome, rpmfusion-nonfree-* e o copr
   do PyCharm (kind `third-party`, `package` = dono). Os copr:* sem dono são `copr`.
 
+- Chaves GPG (decisão do usuário): guardar o ENDEREÇO oficial, nunca a chave nem fingerprint
+  fixo; o restore baixa e importa. COPR: `copr enable` importa. Endereço perdido (só `file://`):
+  tabela `KNOWN_GPGKEYS` + override em `decisions.yml` (`repos.gpgkey`). `--verify-keys`
+  confere com internet (opcional). Ver `docs/pendencias.md`.
 - Repositório de terceiros sem dono e com `gpgkey` só `file://` (ex.: `fedora-recovery-*.repo`)
   não é restaurável em outra máquina: warning `local_gpgkey`, vai para `pending.yml`.
   Avisos que mandam o repo para pending: `credentials_in_url`, `gpgcheck_disabled`,
