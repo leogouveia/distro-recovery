@@ -111,6 +111,13 @@ runner injetável (testes usam fixtures).
 - `fedora-workstation-repositories` distribui google-chrome, rpmfusion-nonfree-* e o copr
   do PyCharm (kind `third-party`, `package` = dono). Os copr:* sem dono são `copr`.
 
+- Repositório de terceiros sem dono e com `gpgkey` só `file://` (ex.: `fedora-recovery-*.repo`)
+  não é restaurável em outra máquina: warning `local_gpgkey`, vai para `pending.yml`.
+  Avisos que mandam o repo para pending: `credentials_in_url`, `gpgcheck_disabled`,
+  `local_gpgkey`. `duplicate_repo_id` e `owned_by_package` são só informativos.
+- `backup --from-fixtures` exige `--dir` explícito. `--ansible` é aceito mas por ora só gera
+  os mesmos dados (roles do Ansible: próxima sessão).
+
 Baseline (Fase 1): grupos/ambientes da edição instalada (mandatory + default) + regras
 fixas: `kernel*`, `kmod-*` versionados (manter `akmod-*`), `*-firmware`, `glibc-langpack-*`,
 `anaconda*`, quem fornece `system-release`, protegidos. Simulação `--installroot` = Fase 3.

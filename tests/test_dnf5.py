@@ -106,6 +106,7 @@ def test_leaves(backend):
         ("https://x/fedora-44/y/aarch64/", "https://x/fedora-$releasever/y/$basearch/"),
         ("https://x/8.12.44/pkg", "https://x/8.12.44/pkg"),
         ("https://x/v144/pkg", "https://x/v144/pkg"),
+        ("https://x/fedora-44-x86_64/", "https://x/fedora-$releasever-$basearch/"),
     ],
 )
 def test_normalize_url(url, expected):
@@ -188,3 +189,19 @@ def test_spec_fingerprint_from_key_filename():
     fp = "3BFA0E4AE8B8CC16A2D9BA684A3B4A566C4660E4"
     spec = _spec({"gpgkey": f"file:///etc/pki/rpm-gpg/RPM-GPG-KEY-x-{fp}.asc"})
     assert spec.gpgkeys == (fp.lower(),)
+
+
+def test_spec_local_gpgkey_without_owner_warns():
+    spec = _spec({"gpgkey": "file:///etc/pki/rpm-gpg/fedora-recovery-code-0.gpg"})
+    assert any(w.startswith("local_gpgkey") for w in spec.warnings)
+
+
+def test_spec_local_gpgkey_shipped_by_a_package_is_fine():
+    key = "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion"
+    spec = _spec({"gpgkey": key}, owner="fedora-workstation-repositories")
+    assert not any(w.startswith("local_gpgkey") for w in spec.warnings)
+
+
+def test_repos_only_defined_by_recovery_files_have_local_key_warning(backend):
+    spec = {r.id: r for r in backend.repos({"code"})}["code"]
+    assert any(w.startswith("local_gpgkey") for w in spec.warnings)

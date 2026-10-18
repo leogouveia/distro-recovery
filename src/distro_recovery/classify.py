@@ -118,7 +118,7 @@ def classify_all(pkgs: Iterable[InstalledPkg], ctx: Context) -> list[Classified]
 
 
 # avisos que impedem um repositório de ir direto para o backup
-_BLOCKING_WARNINGS = ("credentials_in_url", "gpgcheck_disabled")
+_BLOCKING_WARNINGS = ("credentials_in_url", "gpgcheck_disabled", "local_gpgkey")
 
 
 def split_repos(repos: Iterable[RepoSpec]) -> tuple[list[RepoSpec], list[RepoSpec]]:
