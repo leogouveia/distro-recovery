@@ -88,6 +88,15 @@ def parse_leaves(text: str) -> frozenset[str]:
     return frozenset(names)
 
 
+_IMAGE_REPO = re.compile(r"^[0-9a-f]{32}$")
+
+
+def _is_image_tx(tx: dict) -> bool:
+    """Build da imagem (kiwi/Anaconda): todos os pacotes vêm do repo-hash da mídia."""
+    pkgs = tx.get("packages", [])
+    return bool(pkgs) and all(_IMAGE_REPO.match(p.get("repository", "")) for p in pkgs)
+
+
 def _is_yes(value: str) -> bool:
     return value.strip().lower() in ("yes", "true")
 
@@ -192,7 +201,7 @@ class Dnf5Backend:
         listing = json.loads(self._out([*DNF, "history", "list", "--json"]))
         ids = [str(h["id"]) for h in listing]
         if not ids:
-            return UserHistory(first_tx_id=0, installs={})
+            return UserHistory(image_tx_ids=frozenset(), installs={})
         txs = json.loads(self._out([*DNF, "history", "info", *ids, "--json"]))
         installs: dict[str, set[int]] = {}
         for tx in txs:
@@ -202,7 +211,7 @@ class Dnf5Backend:
                 if pkg["action"] == "Install" and pkg["reason"] == Reason.USER:
                     installs.setdefault(parse_nevra(pkg["nevra"]).name, set()).add(tx["id"])
         return UserHistory(
-            first_tx_id=min(int(i) for i in ids),
+            image_tx_ids=frozenset(int(t["id"]) for t in txs if _is_image_tx(t)),
             installs={n: frozenset(s) for n, s in installs.items()},
         )
 

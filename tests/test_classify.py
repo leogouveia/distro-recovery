@@ -34,7 +34,7 @@ def ctx(**kw):
         "exclude": frozenset(),
         "baseline": BASELINE,
         "groups": GROUPS,
-        "history": UserHistory(first_tx_id=1, installs={}),
+        "history": UserHistory(image_tx_ids=frozenset({1}), installs={}),
         "leaves": frozenset(),
         "brew": frozenset(),
     }
@@ -84,7 +84,7 @@ def test_group_package_in_no_known_group_needs_review():
 
 
 def test_user_history():
-    h = UserHistory(1, {"vlc": frozenset({44})})
+    h = UserHistory(frozenset({1}), {"vlc": frozenset({44})})
     check(pkg("vlc"), ctx(history=h), H, C.USER_HISTORY)
 
 
@@ -97,13 +97,24 @@ def test_user_unconfirmed():
 
 
 def test_in_baseline_but_user():
-    h = UserHistory(1, {"nano": frozenset({1, 30})})
+    h = UserHistory(frozenset({1}), {"nano": frozenset({1, 30})})
     check(pkg("nano"), ctx(history=h), R, C.IN_BASELINE_BUT_USER)
 
 
-def test_baseline_installed_only_by_first_transaction():
-    h = UserHistory(1, {"nano": frozenset({1})})
+def test_baseline_installed_only_by_image_transactions():
+    h = UserHistory(frozenset({1, 2}), {"nano": frozenset({1, 2})})
     check(pkg("nano"), ctx(history=h), X, C.BASELINE)
+
+
+def test_second_image_transaction_is_not_user_activity():
+    h = UserHistory(frozenset({1, 2}), {"nano": frozenset({2})})
+    check(pkg("nano"), ctx(history=h), X, C.BASELINE)
+
+
+def test_installed_only_by_the_image_is_not_user_history():
+    h = UserHistory(frozenset({1, 2}), {"dracut-live": frozenset({2})})
+    check(pkg("dracut-live"), ctx(history=h), R, C.USER_UNCONFIRMED)
+    check(pkg("dracut-live"), ctx(history=h, leaves=frozenset({"dracut-live"})), H, C.USER_LEAF)
 
 
 def test_baseline_without_history():
@@ -111,12 +122,12 @@ def test_baseline_without_history():
 
 
 def test_local_rpm_overrides_high():
-    h = UserHistory(1, {"chatgpt": frozenset({20})})
+    h = UserHistory(frozenset({1}), {"chatgpt": frozenset({20})})
     check(pkg("chatgpt", repo="@commandline"), ctx(history=h), R, C.LOCAL_RPM)
 
 
 def test_duplicated_in_brew_overrides_high():
-    h = UserHistory(1, {"htop": frozenset({20})})
+    h = UserHistory(frozenset({1}), {"htop": frozenset({20})})
     check(pkg("htop"), ctx(history=h, brew=frozenset({"htop"})), R, C.DUPLICATED_IN_BREW)
 
 

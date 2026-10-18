@@ -81,7 +81,8 @@ def test_baseline(backend):
 
 def test_history_user_installs(backend):
     h = backend.history_user_installs()
-    assert h.first_tx_id == 1
+    # tx 1 e 2 são builds da imagem live (kiwi): todos os pacotes vêm do repo-hash
+    assert h.image_tx_ids == frozenset({1, 2})
     assert h.installs["pavucontrol"] == frozenset({45})
     assert 44 in h.installs["vlc"]
     assert "7zip" not in h.installs  # dependência, não User

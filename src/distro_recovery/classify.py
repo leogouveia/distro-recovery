@@ -84,9 +84,9 @@ def _decide(pkg: InstalledPkg, ctx: Context) -> Classified:
         # veio de um grupo que não conhecemos (removido?): não dá para cobrir nem descartar
         return out(R, ReasonCode.USER_UNCONFIRMED)
 
-    txs = ctx.history.installs.get(name, frozenset())
+    txs = ctx.history.installs.get(name, frozenset()) - ctx.history.image_tx_ids
     if in_baseline:
-        if any(t > ctx.history.first_tx_id for t in txs):
+        if txs:
             result = out(R, ReasonCode.IN_BASELINE_BUT_USER)
         else:
             return out(X, ReasonCode.BASELINE)

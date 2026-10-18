@@ -122,6 +122,12 @@ Baseline (Fase 1): grupos/ambientes da edição instalada (mandatory + default) 
 fixas: `kernel*`, `kmod-*` versionados (manter `akmod-*`), `*-firmware`, `glibc-langpack-*`,
 `anaconda*`, quem fornece `system-release`, protegidos. Simulação `--installroot` = Fase 3.
 
+> Histórico (divergência aprovada): as transações 1 e 2 desta máquina são builds de imagem
+> (`kiwi`, uid 0, todos os pacotes do repo-hash), não instalação do usuário. "Após a 1ª
+> transação" vira "fora das transações de imagem" (`UserHistory.image_tx_ids` = transações
+> cujos pacotes vêm todos de um `from_repo` hash de 32 hex). Instalações só de imagem não
+> contam como `user_history`.
+
 ## Tabela de decisão (classify.py)
 | Condição | Resultado | reason_code |
 |---|---|---|
@@ -134,7 +140,7 @@ fixas: `kernel*`, `kmod-*` versionados (manter `akmod-*`), `*-firmware`, `glibc-
 | User ∉ baseline, no histórico | HIGH | user_history |
 | User ∉ baseline, fora do histórico, leaf | HIGH | user_leaf |
 | User ∉ baseline, fora do histórico, não leaf | REVIEW | user_unconfirmed |
-| User ∈ baseline, no histórico após a 1ª transação | REVIEW | in_baseline_but_user |
+| User ∈ baseline, no histórico fora das transações de imagem | REVIEW | in_baseline_but_user |
 | User ∈ baseline, fora do histórico | EXCLUDED | baseline |
 | from_repo = @commandline | REVIEW | local_rpm |
 | nome também no Brewfile | REVIEW | duplicated_in_brew |

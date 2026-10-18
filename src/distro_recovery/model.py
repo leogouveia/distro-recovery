@@ -122,5 +122,5 @@ def parse_nevra(nevra: str) -> Nevra:
 class UserHistory:
     """Transações do histórico que instalaram pacotes com reason=User."""
 
-    first_tx_id: int
+    image_tx_ids: frozenset[int]  # builds da imagem de instalação: baseline, não ação do usuário
     installs: dict[str, frozenset[int]]  # nome -> ids das transações
