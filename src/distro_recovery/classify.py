@@ -14,6 +14,8 @@ from distro_recovery.model import (
     InstalledPkg,
     Reason,
     ReasonCode,
+    RepoKind,
+    RepoSpec,
     UserHistory,
 )
 
@@ -113,3 +115,18 @@ def classify_all(pkgs: Iterable[InstalledPkg], ctx: Context) -> list[Classified]
     for p in sorted(pkgs, key=lambda p: (p.name, p.arch, p.from_repo)):
         first.setdefault(p.name, p)
     return [classify(p, ctx) for p in first.values()]
+
+
+# avisos que impedem um repositório de ir direto para o backup
+_BLOCKING_WARNINGS = ("credentials_in_url", "gpgcheck_disabled")
+
+
+def split_repos(repos: Iterable[RepoSpec]) -> tuple[list[RepoSpec], list[RepoSpec]]:
+    """(vão para generated, vão para pending). Repositórios oficiais são descartados."""
+    ok, pending = [], []
+    for r in repos:
+        if r.kind is RepoKind.OFFICIAL:
+            continue
+        blocked = any(w.split(":")[0] in _BLOCKING_WARNINGS for w in r.warnings)
+        (pending if blocked else ok).append(r)
+    return ok, pending
