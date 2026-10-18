@@ -1,0 +1,60 @@
+---
+# Chaves e repositórios, como se faria à mão: `rpm --import <endereço>` e depois o .repo
+# com `gpgkey=<endereço>` e `gpgcheck=1`. Chaves vêm sempre do endereço atual do fornecedor.
+- name: Split repositories by kind
+  ansible.builtin.set_fact:
+    dr_copr: "{{ dr_repos | selectattr('kind', 'equalto', 'copr') | list }}"
+    dr_repofiles: "{{ dr_repos | selectattr('kind', 'equalto', 'repofile') | list }}"
+    dr_pkg_repos: "{{ dr_repos | selectattr('kind', 'in', ['third-party', 'release-package']) | list }}"
+
+- name: Import vendor GPG keys from their official URLs
+  ansible.builtin.rpm_key:
+    key: "{{ item.1 }}"
+    state: present
+  loop: "{{ dr_repofiles | selectattr('gpgkey_urls', 'defined') | subelements('gpgkey_urls') }}"
+  loop_control:
+    label: "{{ item.0.id }}: {{ item.1 }}"
+  when: item.1 is match('^https://')
+
+- name: Define repositories from vendor URLs
+  ansible.builtin.yum_repository:
+    name: "{{ item.id }}"
+    description: "{{ item.name }}"
+    baseurl: "{{ item.baseurl }}"
+    gpgcheck: true
+    gpgkey: "{{ item.gpgkey_urls | default(omit) }}"
+    enabled: true
+    file: "{{ item.id | regex_replace('[^A-Za-z0-9_.-]', '_') }}"
+  loop: "{{ dr_repofiles | selectattr('baseurl', 'defined') | list }}"
+  loop_control:
+    label: "{{ item.id }}"
+
+- name: Enable Copr repositories (the Copr plugin imports the right key)
+  community.general.copr:
+    name: "{{ item.owner }}"
+    state: enabled
+  loop: "{{ dr_copr }}"
+  loop_control:
+    label: "{{ item.owner }}"
+
+- name: Install packages that ship third-party repositories
+  ansible.builtin.dnf5:
+    name: "{{ dr_pkg_repos | selectattr('package', 'defined') | map(attribute='package') | unique | list }}"
+    state: present
+    allow_downgrade: false
+  when: dr_pkg_repos | selectattr('package', 'defined') | list | length > 0
+
+- name: List enabled repositories
+  ansible.builtin.command: dnf5 repo list --enabled
+  register: dr_enabled_repos
+  changed_when: false
+  check_mode: false
+  when: dr_pkg_repos | length > 0
+
+- name: Enable third-party repositories shipped disabled
+  ansible.builtin.command:
+    argv: [dnf5, config-manager, setopt, "{{ item.id }}.enabled=1"]
+  loop: "{{ dr_pkg_repos }}"
+  loop_control:
+    label: "{{ item.id }}"
+  when: dr_enabled_repos.stdout is not search('(?m)^' ~ (item.id | regex_escape) ~ '\s')

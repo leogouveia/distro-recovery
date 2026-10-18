@@ -7,6 +7,7 @@ from typer.testing import CliRunner
 
 from distro_recovery import cli
 from distro_recovery.cli import app
+from distro_recovery.merge import build_vars, load_decisions
 
 FIX = Path(__file__).parent / "fixtures" / "dnf5"
 LOAD = YAML(typ="safe").load
@@ -126,7 +127,7 @@ def test_missing_fixtures_dir_is_an_error(tmp_path):
     assert res.exit_code == 1
 
 
-@pytest.mark.parametrize("cmd", ["review", "diff", "restore", "doctor"])
+@pytest.mark.parametrize("cmd", ["review", "diff", "doctor"])
 def test_other_commands_are_stubs_for_now(cmd):
     res = CliRunner().invoke(app, [cmd])
     assert res.exit_code == 1 and "não implementado" in res.output
@@ -178,3 +179,107 @@ def test_verify_keys_ok_prints_confirmation(tmp_path, monkeypatch):
     res = run(tmp_path, "--verify-keys")
     assert "gpgkey_mismatch" not in res.output and "gpgkey_unreachable" not in res.output
     assert "chaves conferidas" in res.output
+
+
+def test_backup_ansible_flag_writes_playbook_and_vars(tmp_path):
+    run(tmp_path)
+    ans = tmp_path / "ansible"
+    assert (ans / "site.yml").is_file() and (
+        ans / "roles" / "packages" / "tasks" / "main.yml"
+    ).is_file()
+    vars_ = LOAD((ans / "vars.yml").read_text())
+    expected = build_vars(gen(tmp_path, "fedora.yml"), load_decisions(tmp_path / "decisions.yml"))
+    assert vars_ == expected and "pavucontrol" in vars_["dr_packages"]
+
+
+def test_backup_without_ansible_flag_does_not_write_playbook(tmp_path):
+    res = CliRunner().invoke(app, ["backup", "--from-fixtures", str(FIX), "--dir", str(tmp_path)])
+    assert res.exit_code == 2 and not (tmp_path / "ansible").exists()
+
+
+def test_backup_ansible_output_is_deterministic(tmp_path):
+    run(tmp_path / "a")
+    run(tmp_path / "b")
+    for rel in ("vars.yml", "site.yml", "roles/repos/tasks/main.yml"):
+        assert (tmp_path / "a" / "ansible" / rel).read_bytes() == (
+            tmp_path / "b" / "ansible" / rel
+        ).read_bytes()
+
+
+def test_backup_ansible_applies_decisions_to_vars_not_to_decisions(tmp_path):
+    (tmp_path / "decisions.yml").write_text('include: ["extra-app"]\nswaps: [{from: a, to: b}]\n')
+    run(tmp_path)
+    vars_ = LOAD((tmp_path / "ansible" / "vars.yml").read_text())
+    assert "extra-app" in vars_["dr_packages"] and vars_["dr_swaps"] == [{"from": "a", "to": "b"}]
+
+
+@pytest.fixture
+def playbook_calls(monkeypatch):
+    calls = []
+
+    def fake(argv):
+        vars_arg = next(a for a in argv if a.startswith("@"))
+        calls.append({"argv": list(argv), "vars": LOAD(Path(vars_arg[1:]).read_text())})
+        return 0
+
+    monkeypatch.setattr(cli, "_run_playbook", fake)
+    monkeypatch.setattr(cli.shutil, "which", lambda name: "/usr/bin/ansible-playbook")
+    return calls
+
+
+def restore(tmp_path, *args):
+    return CliRunner().invoke(app, ["restore", "--dir", str(tmp_path), *args])
+
+
+def test_restore_requires_a_backup_first(tmp_path, playbook_calls):
+    res = restore(tmp_path)
+    assert res.exit_code == 1 and "backup" in res.output and not playbook_calls
+
+
+def test_restore_runs_the_packaged_playbook_with_merged_vars(tmp_path, playbook_calls):
+    run(tmp_path)
+    (tmp_path / "decisions.yml").write_text('exclude: ["vlc"]\ninclude: ["extra-app"]\n')
+    res = restore(tmp_path)
+    assert res.exit_code == 0, res.output
+    [call] = playbook_calls
+    argv = call["argv"]
+    assert argv[0] == "ansible-playbook" and "--check" not in argv
+    assert "-K" in argv and argv[argv.index("-i") + 1] == "localhost,"
+    assert Path(argv[-1]).name == "site.yml" or any(Path(a).name == "site.yml" for a in argv)
+    pk = call["vars"]["dr_packages"]
+    assert (
+        "vlc" not in pk and "extra-app" in pk and "pavucontrol" in pk
+    )  # exclude > include > generated
+
+
+def test_restore_check_flag_is_passed_through(tmp_path, playbook_calls):
+    run(tmp_path)
+    assert restore(tmp_path, "--check").exit_code == 0
+    assert "--check" in playbook_calls[0]["argv"]
+
+
+def test_restore_propagates_playbook_failure(tmp_path, monkeypatch):
+    run(tmp_path)
+    monkeypatch.setattr(cli, "_run_playbook", lambda argv: 2)
+    monkeypatch.setattr(cli.shutil, "which", lambda name: "/usr/bin/ansible-playbook")
+    assert restore(tmp_path).exit_code == 1
+
+
+def test_restore_needs_ansible_installed(tmp_path, monkeypatch):
+    run(tmp_path)
+    monkeypatch.setattr(cli.shutil, "which", lambda name: None)
+    res = restore(tmp_path)
+    assert res.exit_code == 1 and "ansible" in res.output.lower()
+
+
+def test_restore_rejects_include_exclude_conflict(tmp_path, playbook_calls):
+    run(tmp_path)
+    (tmp_path / "decisions.yml").write_text('include: ["x"]\nexclude: ["x"]\n')
+    res = restore(tmp_path)
+    assert res.exit_code == 1 and "x" in res.output and not playbook_calls
+
+
+def test_restore_mentions_pending_items_but_still_runs(tmp_path, playbook_calls):
+    run(tmp_path)
+    res = restore(tmp_path)
+    assert "pending.yml" in res.output and len(playbook_calls) == 1

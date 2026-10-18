@@ -35,4 +35,15 @@ Pendente para o Ansible: role `repos` usar `rpm_key` com o endereço, `yum_repos
   exclude:
     - "chatgpt"
   ```
-- `--ansible`: ainda sem efeito. Será definido junto com os roles.
+
+## 3. Ansible: pontos a validar na primeira execução real
+- **Repositórios duplicados neste computador.** Os arquivos `fedora-recovery-*.repo`
+  (ferramenta antiga) já definem `code`, `vivaldi`, `vscodium` etc. O playbook cria os arquivos
+  novos (`code.repo`...). Rodar o restore **neste mesmo computador** deixaria ids repetidos;
+  em um computador limpo não há problema. Remover os arquivos antigos é decisão sua (a
+  ferramenta nunca remove nada).
+- `vivaldi.repo` do próprio Vivaldi seria reescrito com o mesmo endereço e `gpgcheck` ligado.
+- Primeira execução recomendada: `distro-recovery restore --check` e depois `restore`, em uma
+  máquina de teste.
+- `release-package` (pacote `*-release`) instala o pacote pelo nome; se ele vier de uma URL
+  fora dos repositórios, será preciso um endereço (ainda não há caso real).

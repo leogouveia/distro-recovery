@@ -1,0 +1,49 @@
+---
+# Instala só o que existe nos repositórios habilitados; o que falta é reportado, sem falhar.
+- name: Query which packages are available
+  ansible.builtin.command:
+    argv: "{{ ['dnf5', 'repoquery', '--available', '--queryformat', '%{name}\\n'] + dr_packages }}"
+  register: dr_available_query
+  changed_when: false
+  check_mode: false
+  when: dr_packages | length > 0
+
+- name: Split packages into available and missing
+  ansible.builtin.set_fact:
+    dr_available: "{{ dr_packages | intersect(dr_available_query.stdout_lines | default([])) }}"
+    dr_missing: "{{ dr_packages | difference(dr_available_query.stdout_lines | default([])) }}"
+
+- name: Install available packages
+  ansible.builtin.dnf5:
+    name: "{{ dr_available }}"
+    state: present
+    allow_downgrade: false
+  when: dr_available | length > 0
+
+- name: Look for replacements of missing packages (obsoleted by)
+  ansible.builtin.command:
+    argv: [dnf5, repoquery, --whatobsoletes, "{{ item }}", --queryformat, "%{name}\\n"]
+  register: dr_obsoleted_by
+  loop: "{{ dr_missing }}"
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Look for providers of missing packages
+  ansible.builtin.command:
+    argv: [dnf5, repoquery, --whatprovides, "{{ item }}", --queryformat, "%{name}\\n"]
+  register: dr_provided_by
+  loop: "{{ dr_missing }}"
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Report packages not found in any enabled repository
+  ansible.builtin.debug:
+    msg: >-
+      Não encontrado: {{ item.0 }}.
+      Substituído por: {{ (item.1.stdout_lines | unique | list) or 'nada encontrado' }}.
+      Fornecido por: {{ ((item.2.stdout_lines | unique | difference([item.0])) | list) or 'nada encontrado' }}.
+  loop: "{{ dr_missing | zip(dr_obsoleted_by.results | default([]), dr_provided_by.results | default([])) | list }}"
+  loop_control:
+    label: "{{ item.0 }}"

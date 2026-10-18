@@ -84,3 +84,9 @@ def render_meta(
             "counts": {k: counts[k] for k in sorted(counts)},
         }
     )
+
+
+def render_ansible_vars(data: Mapping[str, Any]) -> str:
+    """Variáveis do playbook, na ordem fixa que os roles esperam."""
+    keys = ["dr_family", "dr_repos", "dr_groups", "dr_packages", "dr_swaps"]
+    return _dump({k: data[k] for k in keys})

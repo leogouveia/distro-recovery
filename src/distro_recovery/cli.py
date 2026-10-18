@@ -1,25 +1,35 @@
 from __future__ import annotations
 
 import re
+import shutil
+import subprocess
+import tempfile
 from datetime import UTC, datetime
 from importlib.metadata import version
 from pathlib import Path
 
 import typer
+from ruamel.yaml import YAML
 
 from distro_recovery.backends.base import CommandNotInFixtures, FixtureRunner, SubprocessRunner
 from distro_recovery.backends.dnf5 import Dnf5Backend
 from distro_recovery.brewfile import parse_brewfile
 from distro_recovery.classify import Context, classify_all, split_repos
 from distro_recovery.keys import fetch_key, key_fingerprints
-from distro_recovery.merge import load_decisions
+from distro_recovery.merge import build_vars, load_decisions
 from distro_recovery.model import Confidence
-from distro_recovery.render import render_fedora, render_meta, render_pending
+from distro_recovery.render import (
+    render_ansible_vars,
+    render_fedora,
+    render_meta,
+    render_pending,
+)
 from distro_recovery.repokeys import resolve_gpgkeys, verify_keys
 
 app = typer.Typer(help="Inventário e restauração de aplicativos instalados.", no_args_is_help=True)
 
 DEFAULT_DIR = Path("~/.config/distro-recovery")
+PACKAGED_ANSIBLE = Path(__file__).parent / "ansible"
 EXIT_OK, EXIT_ERROR, EXIT_PENDING = 0, 1, 2
 _IMAGE_HASH = re.compile(r"^[0-9a-f]{32}$")  # from_repo dos pacotes instalados pela mídia
 
@@ -35,6 +45,24 @@ def _fail(message: str) -> typer.Exit:
 
 def _needed_repos(from_repos: set[str]) -> set[str]:
     return {r for r in from_repos if not r.startswith("@") and not _IMAGE_HASH.match(r)}
+
+
+def _write_playbook(out_dir: Path, fedora_yml: Path) -> Path:
+    """Copia o playbook empacotado e escreve `vars.yml` (generated + decisions)."""
+    ans = out_dir / "ansible"
+    for stale in ("roles", "site.yml", "requirements.yml"):
+        target = ans / stale
+        if target.is_dir():
+            shutil.rmtree(target)
+        elif target.exists():
+            target.unlink()
+    shutil.copytree(
+        PACKAGED_ANSIBLE, ans, dirs_exist_ok=True, ignore=shutil.ignore_patterns("__pycache__")
+    )
+    generated = YAML(typ="safe").load(fedora_yml.read_text())
+    data = build_vars(generated, load_decisions(out_dir / "decisions.yml"))
+    (ans / "vars.yml").write_text(render_ansible_vars(data))
+    return ans
 
 
 @app.callback()
@@ -133,6 +161,12 @@ def backup(
         f"backup: {counts['packages']} pacotes, {counts['groups']} grupos, "
         f"{counts['repos']} repositórios -> {gen}"
     )
+    if ansible:
+        try:
+            ans = _write_playbook(out_dir, gen / "fedora.yml")
+        except (OSError, ValueError) as exc:
+            raise _fail(str(exc)) from exc
+        typer.echo(f"playbook Ansible atualizado -> {ans}")
     if key_warnings is not None:
         for repo_id, ws in sorted(key_warnings.items()):
             for w in ws:
@@ -150,7 +184,6 @@ def backup(
             f"repositórios -> revise {gen / 'pending.yml'}"
         )
         raise typer.Exit(EXIT_PENDING)
-    _ = ansible  # os roles do Ansible chegam na próxima sessão; os dados já são os mesmos
 
 
 def _stub(name: str) -> None:
@@ -170,10 +203,44 @@ def diff() -> None:
     _stub("diff")
 
 
+def _run_playbook(argv: list[str]) -> int:
+    return subprocess.run(argv, check=False).returncode  # noqa: S603  (herda o terminal: -K)
+
+
 @app.command()
-def restore() -> None:
-    """Restaura a partir do inventário."""
-    _stub("restore")
+def restore(
+    dir_: Path | None = typer.Option(None, "--dir", help="Diretório de dados do usuário."),
+    check: bool = typer.Option(False, "--check", help="Simula, sem alterar o sistema."),
+) -> None:
+    """Restaura repositórios, grupos e pacotes. Nunca remove, nem faz downgrade."""
+    out_dir = (dir_ or DEFAULT_DIR).expanduser()
+    fedora_yml = out_dir / "generated" / "fedora.yml"
+    if not fedora_yml.exists():
+        raise _fail(f"{fedora_yml} não existe: rode `distro-recovery backup` primeiro")
+    if shutil.which("ansible-playbook") is None:
+        raise _fail("ansible-playbook não encontrado; instale o ansible-core")
+    try:
+        generated = YAML(typ="safe").load(fedora_yml.read_text())
+        data = build_vars(generated, load_decisions(out_dir / "decisions.yml"))
+        pending = YAML(typ="safe").load((out_dir / "generated" / "pending.yml").read_text())
+    except FileNotFoundError:
+        pending = {}
+    except (OSError, ValueError) as exc:
+        raise _fail(str(exc)) from exc
+    if any(pending.get(k) for k in ("packages", "repos", "missing_repos")):
+        typer.echo(
+            f"aviso: há itens em {out_dir / 'generated' / 'pending.yml'} que NÃO serão restaurados"
+        )
+    with tempfile.TemporaryDirectory() as tmp:
+        vars_file = Path(tmp) / "vars.yml"
+        vars_file.write_text(render_ansible_vars(data))
+        argv = ["ansible-playbook", "-i", "localhost,", "-c", "local", "-K", "-e", f"@{vars_file}"]
+        if check:
+            argv.append("--check")
+        argv.append(str(PACKAGED_ANSIBLE / "site.yml"))
+        code = _run_playbook(argv)
+    if code != 0:
+        raise _fail(f"ansible-playbook terminou com código {code}")
 
 
 @app.command()

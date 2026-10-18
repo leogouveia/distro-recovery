@@ -161,11 +161,23 @@ HIGH → `generated/fedora.yml`; REVIEW → `generated/pending.yml`; EXCLUDED �
 - repofile normalizado: versões fixas → `$releasever`, arquitetura → `$basearch`; credenciais
   na URL ou gpgcheck=0 → pending com aviso. Registrar URL + fingerprint das chaves GPG.
 
-## Ansible (próximas sessões)
-Ordem: repos → swaps → groups → packages. Módulos: `ansible.builtin.dnf5` (present,
-allow_downgrade false), `yum_repository`, `rpm_key` com fingerprint, `community.general.copr`.
-packages: filtrar com `dnf5 repoquery --available`, instalar a interseção, reportar ausentes
-(sugestão via `--whatobsoletes`/`--whatprovides`) sem falhar.
+## Ansible (implementado; empacotado em `src/distro_recovery/ansible/`)
+`site.yml` (localhost, `become`) + roles na ordem repos -> swaps -> groups -> packages, lendo
+as variáveis `dr_family/dr_repos/dr_groups/dr_packages/dr_swaps` de `vars.yml`.
+- `vars.yml` = `build_vars(generated/fedora.yml, decisions.yml)` (merge.py): exclude > include >
+  generated; `repos.exclude` e `repos.gpgkey` aplicados; swaps passados adiante.
+- `backup --ansible` copia o playbook para `<dir>/ansible/` e escreve `vars.yml` (pasta da
+  ferramenta, reescrita a cada backup). `restore [--check]` usa o playbook empacotado e gera
+  as variáveis na hora, então edições no `decisions.yml` valem sem novo backup.
+- repos: `rpm_key` (só https) -> `yum_repository` (`gpgcheck` sempre ligado) -> `copr` (COPR) ->
+  pacote dono + `dnf5 config-manager setopt <id>.enabled=1` (third-party).
+- packages: `dnf5 repoquery --available` -> instala a interseção -> reporta ausentes com
+  `--whatobsoletes`/`--whatprovides`, sem falhar.
+- Testes estáticos garantem: sem remoção, sem downgrade, sem desabilitar GPG, e
+  `--allowerasing` só no role swaps. `ansible-core` é dependência de desenvolvimento;
+  a verificação de sintaxe exige a coleção `community.general` (senão o teste é pulado).
+- Não verificado sem root: os módulos `dnf5`/`copr` exigem root mesmo em `--check`; a lógica
+  dos demais passos foi simulada com dados reais.
 
 ## CLI e códigos de saída
 - `backup [--ansible] [--dir PATH] [--from-fixtures DIR] [--verbose]`: 0 ok, 2 pendências, 1 erro
@@ -180,7 +192,7 @@ packages: filtrar com `dnf5 repoquery --available`, instalar a interseção, rep
 - `uv run ruff check` / `uv run ruff format --check` — lint
 
 ## Decisões pendentes
-Ver `docs/pendencias.md` (chaves GPG de repositórios, `--ansible`).
+Ver `docs/pendencias.md`.
 
 ## Fluxo
 TDD na ordem: model → parsers dnf5 → classify (1 teste por reason_code) → render

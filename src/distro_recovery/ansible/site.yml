@@ -1,0 +1,26 @@
+---
+# Restaura o sistema a partir de `vars.yml` (gerado por `distro-recovery`).
+# Ordem: repositórios -> swaps -> grupos -> pacotes.
+# Nunca remove, nunca faz downgrade e nunca desabilita a verificação GPG;
+# a única exceção são os `swaps` declarados em decisions.yml.
+- name: distro-recovery restore
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: true
+  pre_tasks:
+    - name: Check the data and the distribution family
+      ansible.builtin.assert:
+        that:
+          - dr_family == 'fedora'
+          - dr_repos is defined
+          - dr_groups is defined
+          - dr_packages is defined
+          - dr_swaps is defined
+        fail_msg: "Dados ausentes ou família não suportada (Fase 1: fedora). Rode `distro-recovery backup`."
+        quiet: true
+  roles:
+    - repos
+    - swaps
+    - groups
+    - packages

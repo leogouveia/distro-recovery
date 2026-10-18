@@ -1,0 +1,9 @@
+---
+# Única exceção ao "nunca remove": trocas declaradas em decisions.yml.
+# Só troca se `from` está instalado e `to` ainda não.
+- name: Process declared swaps
+  ansible.builtin.include_tasks: swap.yml
+  loop: "{{ dr_swaps }}"
+  loop_control:
+    loop_var: dr_swap
+    label: "{{ dr_swap['from'] }} -> {{ dr_swap['to'] }}"

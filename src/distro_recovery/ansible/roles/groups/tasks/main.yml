@@ -1,0 +1,7 @@
+---
+- name: Install package groups
+  ansible.builtin.dnf5:
+    name: "{{ dr_groups | map('regex_replace', '^', '@') | list }}"
+    state: present
+    allow_downgrade: false
+  when: dr_groups | length > 0

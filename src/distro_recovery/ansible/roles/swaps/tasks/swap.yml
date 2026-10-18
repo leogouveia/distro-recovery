@@ -1,0 +1,23 @@
+---
+- name: Is the source package installed?
+  ansible.builtin.command:
+    argv: [rpm, -q, "{{ dr_swap['from'] }}"]
+  register: dr_swap_from
+  failed_when: false
+  changed_when: false
+  check_mode: false
+
+- name: Is the target package installed?
+  ansible.builtin.command:
+    argv: [rpm, -q, "{{ dr_swap['to'] }}"]
+  register: dr_swap_to
+  failed_when: false
+  changed_when: false
+  check_mode: false
+
+- name: Swap packages in one transaction
+  ansible.builtin.command:
+    argv: [dnf5, swap, --assumeyes, --allowerasing, "{{ dr_swap['from'] }}", "{{ dr_swap['to'] }}"]
+  when:
+    - dr_swap_from.rc == 0
+    - dr_swap_to.rc != 0

@@ -49,6 +49,13 @@ def load_decisions(path: Path) -> Decisions:
     renames, swaps = data.get("renames") or {}, data.get("swaps") or []
     if not isinstance(renames, dict) or not isinstance(swaps, list):
         raise DecisionsError("renames deve ser mapeamento e swaps uma lista")
+    for sw in swaps:
+        if not (
+            isinstance(sw, dict)
+            and isinstance(sw.get("from"), str)
+            and isinstance(sw.get("to"), str)
+        ):
+            raise DecisionsError("swaps: cada item precisa de `from` e `to` (strings)")
     d = Decisions(
         include=_names(data, "include", ""),
         exclude=_names(data, "exclude", ""),
@@ -61,3 +68,26 @@ def load_decisions(path: Path) -> Decisions:
     if both:
         raise DecisionConflict(f"em include e exclude ao mesmo tempo: {', '.join(sorted(both))}")
     return d
+
+
+def build_vars(generated: dict[str, Any], decisions: Decisions) -> dict[str, Any]:
+    """Variáveis do playbook. Precedência: exclude > include > generated."""
+    both = decisions.include & decisions.exclude
+    if both:
+        raise DecisionConflict(f"em include e exclude ao mesmo tempo: {', '.join(sorted(both))}")
+    packages = (set(generated.get("packages", [])) | decisions.include) - decisions.exclude
+    repos = []
+    for repo in sorted(generated.get("repos", []), key=lambda r: r["id"]):
+        if repo["id"] in decisions.repos_exclude:
+            continue
+        repo = dict(repo)
+        if repo["id"] in decisions.repos_gpgkey:
+            repo["gpgkey_urls"] = [decisions.repos_gpgkey[repo["id"]]]
+        repos.append(repo)
+    return {
+        "dr_family": generated["family"],
+        "dr_repos": repos,
+        "dr_groups": sorted(set(generated.get("groups", []))),
+        "dr_packages": sorted(packages),
+        "dr_swaps": [dict(s) for s in decisions.swaps],
+    }
