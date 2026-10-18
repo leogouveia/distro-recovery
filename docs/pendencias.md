@@ -15,32 +15,44 @@ arquivo que existe apenas neste computador (criado pela ferramenta antiga `fedor
 
 Por isso eles ficam em `pending.yml` com o aviso `local_gpgkey` e não entram no backup.
 
-**O que você pediu.** No restore, importar as chaves da mesma forma que se faz ao adicionar o
-repositório manualmente.
+**O que você pediu.** No restore, importar as chaves da internet, como se faz à mão
+(`rpm --import <endereço>` e `gpgkey=<endereço>` no arquivo `.repo`), para sempre pegar a
+chave atual.
 
-**Descoberta.** Dá para ler a chave pública completa de cada repositório direto do
-computador, sem internet (`rpm -q gpg-pubkey-... --qf '%{DESCRIPTION}'`). Chave pública não
-é segredo, então pode ser guardada junto com as listas.
+**O que foi verificado (17/10/2026).**
+- **A origem da importação não fica registrada.** O `rpm` guarda só o conteúdo da chave e a
+  data; o log do `dnf5` e o histórico não têm o endereço. Não dá para recuperar "de onde a
+  chave veio", só "qual chave está instalada".
+- **Mas o endereço oficial entrega a chave instalada.** Baixei a chave de 7 endereços
+  oficiais (VS Code, VSCodium, WebApp Manager, Android Studio, Google Chrome, Vivaldi,
+  1Password) e a impressão digital (fingerprint) de todas é idêntica à instalada.
+- Guardar a chave no backup (opção antiga A) fica **descartada**: a chave ficaria velha se o
+  fornecedor trocar (o Vivaldi já tem duas, KEY11 e KEY12). Também não vamos fixar o
+  fingerprint no restore, pelo mesmo motivo.
 
-**Opções.**
-- **A. Guardar a chave pública no backup (recomendada).** O restore importa a chave e confere
-  o "fingerprint" (a impressão digital dela). Funciona sem internet e não depende de o
-  fornecedor manter o endereço da chave. Resolve também os repositórios que hoje ficam sem
-  fingerprint. Custo: o backup passa a guardar o texto de umas 10 chaves.
-- **B. Guardar só o endereço oficial da chave de cada fornecedor.** Arquivos menores, mas
-  precisamos descobrir e conferir cada endereço, e ele pode mudar ou sair do ar.
-- **C. Misturar:** chave guardada (A), e o endereço quando existir, só para informação.
+**Solução recomendada.**
+1. Cada repositório guarda o **endereço oficial da chave** (`gpgkey`), como já faz para os
+   repositórios cujo arquivo `.repo` tem endereço (Vivaldi, Google, 1Password, Android Studio).
+2. No restore: baixa e importa a chave desse endereço, depois cria o repositório com
+   `gpgcheck=1` e o mesmo endereço (equivale ao seu exemplo do VS Code).
+3. **COPR** (WebApp Manager, Android Studio): não precisa de endereço, o comando
+   `dnf copr enable dono/projeto` já importa a chave certa.
+4. Falta resolver só os repositórios cujo arquivo `.repo` perdeu o endereço (VS Code e
+   VSCodium, criados pela ferramenta antiga). Proposta: uma **tabela pequena de fornecedores
+   conhecidos** dentro da ferramenta (`code` -> `https://packages.microsoft.com/keys/microsoft.asc`,
+   `gitlab.com_paulcarroty_vscodium_repo` ->
+   `https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/-/raw/master/pub.gpg`), usada só
+   quando o `.repo` local não tem endereço, e que você pode sobrescrever no `decisions.yml`.
+   Repositório desconhecido sem endereço continua indo para o `pending`.
+5. Opcional: o backup poderia conferir, com internet, se o endereço entrega a chave instalada
+   e avisar se não.
 
 **Perguntas para você.**
-1. Pode ser a opção A?
-2. Guardar todas as chaves de terceiros que estão no computador ou só as dos repositórios
-   que entram no backup? (Sugestão: só as dos repositórios que entram.)
-3. Como saber qual chave pertence a qual repositório? Para COPR já casamos pelo nome da chave.
-   Para os demais (Microsoft, Vivaldi, Google, 1Password…) a ligação precisa ser confirmada
-   por você ou por uma regra de nomes. Podemos listar as chaves no restore e importar todas.
+1. Concorda com a solução acima (endereço oficial no backup, chave baixada no restore)?
+2. Posso criar a tabela de fornecedores conhecidos com VS Code e VSCodium para começar?
+3. Quer a conferência opcional do item 5 (exige internet no backup)?
 
-**Impacto.** Roles do Ansible (`repos`) e o backup (`generated/`). Nada é feito enquanto você
-não decidir.
+**Impacto.** Backup (`generated/`) e role `repos` do Ansible.
 
 ## 2. Itens de resposta curta
 - `chatgpt` (instalado de um RPM baixado) fica fora da lista. Para o backup parar de listá-lo
