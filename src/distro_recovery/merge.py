@@ -17,6 +17,8 @@ class DecisionsError(ValueError):
 
 @dataclass(frozen=True)
 class Decisions:
+    """Conteúdo validado do decisions.yml (o único arquivo que o usuário edita)."""
+
     include: frozenset[str] = frozenset()
     exclude: frozenset[str] = frozenset()
     repos_exclude: frozenset[str] = frozenset()
@@ -33,11 +35,13 @@ def _names(data: dict[str, Any], key: str, where: str) -> frozenset[str]:
 
 
 def load_decisions(path: Path) -> Decisions:
+    """Lê e valida o decisions.yml. Arquivo ausente = nenhuma decisão (não é erro)."""
     if not path.exists():
         return Decisions()
     data = YAML(typ="safe").load(path.read_text()) or {}
     if not isinstance(data, dict):
         raise DecisionsError(f"{path}: esperava um mapeamento na raiz")
+    # as validações abaixo dão mensagens apontando a chave errada, em vez de um traceback
     repos = data.get("repos") or {}
     if not isinstance(repos, dict):
         raise DecisionsError("repos: esperava um mapeamento")
@@ -56,6 +60,7 @@ def load_decisions(path: Path) -> Decisions:
             and isinstance(sw.get("to"), str)
         ):
             raise DecisionsError("swaps: cada item precisa de `from` e `to` (strings)")
+    # `from` / `to` são os dois lados de um `dnf5 swap`
     d = Decisions(
         include=_names(data, "include", ""),
         exclude=_names(data, "exclude", ""),

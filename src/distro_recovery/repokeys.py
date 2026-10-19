@@ -24,6 +24,11 @@ def _is_local_key_warning(w: str) -> bool:
 def resolve_gpgkeys(
     specs: Iterable[RepoSpec], overrides: Mapping[str, str], known: Mapping[str, str] | None = None
 ) -> list[RepoSpec]:
+    """Preenche o endereço da chave de repos que o perderam.
+
+    Prioridade: `repos.gpgkey` do decisions.yml > tabela KNOWN_GPGKEYS. Ao resolver, o aviso
+    `local_gpgkey` (que mandaria o repo para pending) é trocado por um aviso informativo.
+    """
     known = KNOWN_GPGKEYS if known is None else known
     for repo_id, url in overrides.items():
         if not url.startswith("https://"):
@@ -35,7 +40,7 @@ def resolve_gpgkeys(
             url, source = overrides[s.id], "decisions.yml"
         elif any(_is_local_key_warning(w) for w in s.warnings) and s.id in known:
             url, source = known[s.id], "tabela de fornecedores conhecidos"
-        if url is None:
+        if url is None:  # nada a corrigir neste repositório
             out.append(s)
             continue
         warnings = [w for w in s.warnings if not _is_local_key_warning(w)]

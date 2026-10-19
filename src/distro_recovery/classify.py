@@ -26,6 +26,8 @@ class DecisionConflict(ValueError):
 
 @dataclass(frozen=True)
 class Context:
+    """Tudo o que a classificação precisa saber. Montado pela CLI; este módulo não lê nada."""
+
     include: frozenset[str]
     exclude: frozenset[str]
     baseline: Baseline
@@ -35,6 +37,7 @@ class Context:
     brew: frozenset[str]
 
     def __post_init__(self) -> None:
+        # valida já na criação: "include" e "exclude" não podem se contradizer
         both = self.include & self.exclude
         if both:
             raise DecisionConflict(
@@ -47,6 +50,7 @@ _VERSIONED_KMOD = re.compile(r"^kmod-.+-\d+(\.\d+)+-\d+")
 
 
 def is_system_rule(name: str, baseline: Baseline) -> bool:
+    """Regras fixas: pacotes que pertencem ao sistema/hardware, não a uma escolha do usuário."""
     return (
         name.startswith("kernel")
         or _VERSIONED_KMOD.match(name) is not None
@@ -59,21 +63,26 @@ def is_system_rule(name: str, baseline: Baseline) -> bool:
 
 
 def _decide(pkg: InstalledPkg, ctx: Context) -> Classified:
+    """Percorre a tabela de decisão do CLAUDE.md de cima para baixo; a 1ª regra que casa vence."""
     name = pkg.name
     H, R, X = Confidence.HIGH, Confidence.REVIEW, Confidence.EXCLUDED  # noqa: N806
 
     def out(conf: Confidence, code: ReasonCode, group: str | None = None) -> Classified:
         return Classified(name, conf, code, group)
 
+    # 1) decisões explícitas do usuário (exclude > include)
     if name in ctx.exclude:
         return out(X, ReasonCode.USER_EXCLUDED)
     if name in ctx.include:
         return out(H, ReasonCode.USER_INCLUDED)
+    # 2) regras fixas do sistema
     if is_system_rule(name, ctx.baseline):
         return out(X, ReasonCode.SYSTEM_RULE)
+    # 3) dependências vêm sozinhas com o pacote que as pede (princípio: intenção, não estado)
     if pkg.reason in (Reason.DEPENDENCY, Reason.WEAK_DEPENDENCY, Reason.CLEAN):
         return out(X, ReasonCode.DEPENDENCY)
 
+    # 4) instalados por grupo: ou a baseline já cobre, ou o grupo (@grupo) cobre no restore
     in_baseline = name in ctx.baseline.packages
     if pkg.reason is Reason.GROUP:
         if in_baseline:
@@ -86,6 +95,7 @@ def _decide(pkg: InstalledPkg, ctx: Context) -> Classified:
         # veio de um grupo que não conhecemos (removido?): não dá para cobrir nem descartar
         return out(R, ReasonCode.USER_UNCONFIRMED)
 
+    # 5) reason=User: olha o histórico do DNF, ignorando as transações da imagem de instalação
     txs = ctx.history.installs.get(name, frozenset()) - ctx.history.image_tx_ids
     if in_baseline:
         if txs:
@@ -131,8 +141,10 @@ def split_repos(repos: Iterable[RepoSpec]) -> tuple[list[RepoSpec], list[RepoSpe
     """(vão para generated, vão para pending). Repositórios oficiais são descartados."""
     ok, pending = [], []
     for r in repos:
+        # repositórios oficiais do Fedora já vêm com o sistema
         if r.kind is RepoKind.OFFICIAL:
             continue
+        # o aviso vem como "codigo: texto"; só o código antes dos dois-pontos interessa
         blocked = any(w.split(":")[0] in _BLOCKING_WARNINGS for w in r.warnings)
         (pending if blocked else ok).append(r)
     return ok, pending

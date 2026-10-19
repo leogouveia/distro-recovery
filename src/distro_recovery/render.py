@@ -25,9 +25,9 @@ def _quote(obj: Any) -> Any:
 
 
 def _dump(data: Mapping[str, Any]) -> str:
-    yaml = YAML()
+    yaml = YAML()  # modo round-trip: preserva a ordem das chaves que passamos
     yaml.default_flow_style = False
-    yaml.width = 100_000
+    yaml.width = 100_000  # evita quebrar linhas longas (URLs) em várias linhas
     yaml.indent(mapping=2, sequence=4, offset=2)
     buf = io.StringIO()
     yaml.dump(_quote(data), buf)
@@ -35,6 +35,7 @@ def _dump(data: Mapping[str, Any]) -> str:
 
 
 def _repo(r: RepoSpec, *, warnings: bool) -> dict[str, Any]:
+    """RepoSpec -> dict. Campos vazios são omitidos; avisos só aparecem em pending.yml."""
     entry: dict[str, Any] = {"id": r.id, "kind": r.kind.value, "name": r.name}
     optional: list[tuple[str, Any]] = [
         ("baseurl", r.baseurl),
@@ -50,6 +51,7 @@ def _repo(r: RepoSpec, *, warnings: bool) -> dict[str, Any]:
 
 
 def render_fedora(packages: Iterable[str], groups: Iterable[str], repos: Iterable[RepoSpec]) -> str:
+    """generated/fedora.yml: o que o restore vai instalar. `sorted` garante saída estável."""
     return _dump(
         {
             "family": "fedora",
@@ -63,6 +65,7 @@ def render_fedora(packages: Iterable[str], groups: Iterable[str], repos: Iterabl
 def render_pending(
     packages: Iterable[Classified], repos: Iterable[RepoSpec], missing_repos: Iterable[str]
 ) -> str:
+    """generated/pending.yml: o que precisa de decisão humana (pacotes, repos e ausentes)."""
     items = sorted(packages, key=lambda c: (c.name, c.reason_code.value))
     return _dump(
         {
@@ -76,6 +79,7 @@ def render_pending(
 def render_meta(
     *, family: str, tool_version: str, generated_at: str, counts: Mapping[str, int]
 ) -> str:
+    """generated/meta.yml: o único arquivo com data/hora (por isso não entra em comparações)."""
     return _dump(
         {
             "family": family,

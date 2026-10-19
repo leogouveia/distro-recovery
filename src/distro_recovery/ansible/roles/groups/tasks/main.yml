@@ -1,4 +1,5 @@
 ---
+# Grupos do DNF (ex.: development-tools). O prefixo @ marca o nome como grupo, não pacote.
 - name: Install package groups
   ansible.builtin.dnf5:
     name: "{{ dr_groups | map('regex_replace', '^', '@') | list }}"

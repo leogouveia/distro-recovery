@@ -1,2 +1,3 @@
 ---
+# Onde o DNF guarda os .repo; usado para detectar ids já definidos.
 dr_repo_dir: /etc/yum.repos.d

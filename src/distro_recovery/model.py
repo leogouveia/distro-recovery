@@ -7,6 +7,9 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import NamedTuple
 
+# Todos os tipos aqui são imutáveis (frozen) e sem lógica de I/O: circulam entre as camadas
+# (backend -> classify -> render) sem risco de alguém alterá-los pelo caminho.
+
 
 class Reason(StrEnum):
     """Valores literais de `%{reason}` / `packages[].reason` no dnf5 5.4."""
@@ -19,12 +22,16 @@ class Reason(StrEnum):
 
 
 class Confidence(StrEnum):
+    """Destino de um pacote: HIGH -> fedora.yml, REVIEW -> pending.yml, EXCLUDED -> só log."""
+
     HIGH = "high"
     REVIEW = "review"
     EXCLUDED = "excluded"
 
 
 class ReasonCode(StrEnum):
+    """Por que o classificador decidiu assim (uma linha da tabela de decisão do CLAUDE.md)."""
+
     USER_EXCLUDED = "user_excluded"
     USER_INCLUDED = "user_included"
     SYSTEM_RULE = "system_rule"
@@ -41,6 +48,8 @@ class ReasonCode(StrEnum):
 
 
 class RepoKind(StrEnum):
+    """Como o repositório é recriado no restore (decidido pelo dono do arquivo .repo)."""
+
     OFFICIAL = "official"
     THIRD_PARTY = "third-party"
     RELEASE_PACKAGE = "release-package"
@@ -50,6 +59,8 @@ class RepoKind(StrEnum):
 
 @dataclass(frozen=True)
 class InstalledPkg:
+    """Uma linha do `dnf5 repoquery --installed`."""
+
     name: str
     arch: str
     reason: Reason
@@ -63,6 +74,8 @@ class InstalledPkg:
 
 @dataclass(frozen=True)
 class Classified:
+    """Resultado do classificador para um nome de pacote."""
+
     name: str
     confidence: Confidence
     reason_code: ReasonCode
@@ -71,6 +84,8 @@ class Classified:
 
 @dataclass(frozen=True)
 class Group:
+    """Grupo de pacotes do DNF (ex.: development-tools) e seus pacotes padrão."""
+
     id: str
     name: str
     packages: frozenset[str]  # mandatory + default
@@ -78,6 +93,8 @@ class Group:
 
 @dataclass(frozen=True)
 class Baseline:
+    """O que a instalação "de fábrica" já traz; o que está aqui nunca é escolha do usuário."""
+
     environment: str
     groups: frozenset[str]
     packages: frozenset[str]
@@ -87,6 +104,8 @@ class Baseline:
 
 @dataclass(frozen=True)
 class RepoSpec:
+    """Receita para recriar um repositório de terceiros em outra máquina."""
+
     id: str
     kind: RepoKind
     name: str
@@ -99,6 +118,8 @@ class RepoSpec:
 
 
 class Nevra(NamedTuple):
+    """name-epoch:version-release.arch, as partes de um pacote RPM."""
+
     name: str
     epoch: str
     version: str
@@ -106,6 +127,7 @@ class Nevra(NamedTuple):
     arch: str
 
 
+# "nome-epoch:ver-rel.arch". O nome pode ter hífens, por isso o `.+` guloso no começo.
 _NEVRA = re.compile(
     r"^(?P<name>.+)-(?P<epoch>\d+):(?P<version>[^-:]+)-(?P<release>[^-]+)\.(?P<arch>[^.-]+)$"
 )

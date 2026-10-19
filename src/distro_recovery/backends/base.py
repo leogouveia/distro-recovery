@@ -15,19 +15,27 @@ from distro_recovery.model import Baseline, Group, InstalledPkg, RepoSpec, UserH
 
 @dataclass(frozen=True)
 class CmdResult:
+    """Saída de um comando (só o stdout importa; o stderr é descartado)."""
+
     stdout: str
     returncode: int = 0
 
 
 class Runner(Protocol):
+    """Chamável argv -> CmdResult. Ponto de injeção: real em produção, fixtures em testes."""
+
     def __call__(self, argv: Sequence[str]) -> CmdResult: ...
 
 
 class CommandNotInFixtures(KeyError):
+    """O backend pediu um comando que o manifest.yml das fixtures não conhece."""
+
     pass
 
 
 class ReadOnlyViolation(RuntimeError):
+    """Tentativa de rodar um comando fora da lista de leitura (trava de segurança)."""
+
     pass
 
 
@@ -47,6 +55,7 @@ class FixtureRunner:
         return CmdResult(text, int(entry.get("returncode", 0)))
 
 
+# Subcomandos do dnf5 permitidos. None = qualquer forma; conjunto = só esses subcomandos.
 _DNF_READ = {
     "repoquery": None,
     "leaves": None,
@@ -57,6 +66,7 @@ _DNF_READ = {
 
 
 def _check_read_only(argv: Sequence[str]) -> None:
+    """Lista branca: só ls/cat, rpmkeys --list, rpm -q* e dnf5 de consulta. Tudo mais é recusado."""
     if not argv:
         raise ReadOnlyViolation("comando vazio")
     prog, rest = argv[0], list(argv[1:])
@@ -67,7 +77,7 @@ def _check_read_only(argv: Sequence[str]) -> None:
     if prog == "rpm" and rest and (rest[0].startswith("-q") or rest[0] == "--query"):
         return
     if prog == "dnf5":
-        words = [a for a in rest if not a.startswith("-")]
+        words = [a for a in rest if not a.startswith("-")]  # ignora flags (--assumeno, -C...)
         if words and words[0] in _DNF_READ:
             allowed = _DNF_READ[words[0]]
             if allowed is None or (len(words) > 1 and words[1] in allowed):
@@ -95,6 +105,8 @@ class SubprocessRunner:
 
 
 class Backend(Protocol):
+    """Contrato de um gerenciador de pacotes. Novos (apt, pacman) só implementam isto."""
+
     family: str
 
     def detect(self) -> bool: ...

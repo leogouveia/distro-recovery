@@ -31,6 +31,7 @@ ARCHES = ("x86_64", "aarch64", "i686", "ppc64le", "s390x")
 
 
 def parse_installed(text: str) -> list[InstalledPkg]:
+    """Saída do repoquery (5 colunas separadas por TAB) -> lista de InstalledPkg."""
     pkgs = []
     for line in text.splitlines():
         if not line.strip():
@@ -47,6 +48,7 @@ def parse_installed(text: str) -> list[InstalledPkg]:
     return pkgs
 
 
+# "Chave : valor" (início de campo) e "      : valor" (continuação de uma lista)
 _KEY = re.compile(r"^(\S.*?)\s+:\s?(.*)$")
 _CONT = re.compile(r"^\s+:\s?(.*)$")
 
@@ -57,12 +59,12 @@ def parse_info_blocks(text: str) -> list[dict[str, list[str]]]:
     current: dict[str, list[str]] | None = None
     key = ""
     for line in text.splitlines():
-        if m := _CONT.match(line):
+        if m := _CONT.match(line):  # continuação: acrescenta ao último campo visto
             if current is not None and key:
                 current[key].append(m.group(1).strip())
         elif m := _KEY.match(line):
             key = m.group(1).strip()
-            if key == "Id" or current is None:
+            if key == "Id" or current is None:  # "Id" abre um novo bloco (grupo/ambiente)
                 current = {}
                 blocks.append(current)
             current[key] = [m.group(2).strip()] if m.group(2).strip() else []
@@ -81,6 +83,7 @@ def parse_list_ids(text: str) -> list[str]:
 
 
 def parse_leaves(text: str) -> frozenset[str]:
+    """Nomes dos pacotes "folha" (nada depende deles) = candidatos a escolha do usuário."""
     names = set()
     for line in text.splitlines():
         # `- nevra` por leaf; membros de ciclos de dependência vêm só indentados
@@ -89,6 +92,7 @@ def parse_leaves(text: str) -> frozenset[str]:
     return frozenset(names)
 
 
+# from_repo de 32 hex = mídia/imagem de instalação (ver CLAUDE.md, "Divergências observadas")
 _IMAGE_REPO = re.compile(r"^[0-9a-f]{32}$")
 
 
@@ -103,6 +107,7 @@ def _is_yes(value: str) -> bool:
 
 
 def _name_of_nvra(nvra: str) -> str:
+    """Ex.: bash-5.2-1.fc44.x86_64 -> bash (remove versão, release e arquitetura)."""
     m = re.match(r"^(.+)-[^-]+-[^-]+\.[^.-]+$", nvra.strip())
     if m is None:
         raise ValueError(f"nvra inválido: {nvra!r}")
@@ -115,6 +120,7 @@ def _packages_of(info: dict[str, list[str]]) -> frozenset[str]:
 
 def normalize_url(url: str, releasever: str) -> str:
     """Versões fixas -> $releasever, arquitetura -> $basearch."""
+    # os lookarounds evitam trocar trechos no meio de palavras (ex.: "x86_64" dentro de um nome)
     arch = "|".join(re.escape(a) for a in ARCHES)
     url = re.sub(rf"(?<![A-Za-z0-9_.])({arch})(?![A-Za-z0-9_.])", "$basearch", url)
     return re.sub(rf"(?<![\d.]){re.escape(releasever)}(?!\d|\.\d)", "$releasever", url)
@@ -144,6 +150,7 @@ def _copr_fingerprints(owner_project: str | None, keys: list[tuple[str, str]]) -
 
 
 def parse_repo_file(text: str) -> dict[str, dict[str, str]]:
+    """Arquivo .repo (formato INI) -> {id_do_repo: {opção: valor}}."""
     cp = configparser.RawConfigParser(strict=False, interpolation=None, delimiters=("=",))
     cp.optionxform = str  # type: ignore[assignment,method-assign]
     cp.read_string(text)
@@ -154,36 +161,44 @@ def parse_repo_file(text: str) -> dict[str, dict[str, str]]:
 
 
 class Dnf5Backend:
+    """Implementa o Protocol Backend para Fedora. Não sabe se o runner é real ou de fixtures."""
+
     family = "fedora"
 
     def __init__(self, runner: Runner) -> None:
         self.run = runner
 
     def _out(self, argv: list[str]) -> str:
+        """Roda o comando e devolve o stdout; código de saída diferente de 0 vira erro."""
         res: CmdResult = self.run(argv)
         if res.returncode != 0:
             raise RuntimeError(f"{' '.join(argv[:4])}… terminou com código {res.returncode}")
         return res.stdout
 
     def detect(self) -> bool:
+        """É Fedora? (o pacote que provê `system-release` se chama fedora-release-*)"""
         res = self.run(["rpm", "-q", "--whatprovides", "system-release"])
         return res.returncode == 0 and res.stdout.startswith("fedora-release")
 
     def installed(self) -> list[InstalledPkg]:
+        """Todos os pacotes instalados, com o motivo (reason) e o repositório de origem."""
         return parse_installed(
             self._out([*DNF, "repoquery", "--installed", "--queryformat", QUERYFORMAT])
         )
 
     def _group(self, group_id: str) -> Group:
+        """Detalhes de um grupo via `group info` (nome + pacotes mandatory/default)."""
         blocks = parse_info_blocks(self._out([*DNF, "group", "info", group_id]))
         info = blocks[0]
         return Group(group_id, info.get("Name", [group_id])[0], _packages_of(info))
 
     def installed_groups(self) -> list[Group]:
+        """Grupos instalados, ordenados por id."""
         ids = parse_list_ids(self._out([*DNF, "group", "list", "--installed"]))
         return [self._group(i) for i in sorted(ids)]
 
     def _protected(self) -> frozenset[str]:
+        """Pacotes que o DNF não deixa remover (/etc/dnf/protected.d/*.conf, um nome por linha)."""
         names: set[str] = set()
         for fname in self._out(["ls", "-1", PROTECTED_DIR]).split():
             if not fname.endswith(".conf"):
@@ -195,6 +210,11 @@ class Dnf5Backend:
         return frozenset(names)
 
     def baseline(self) -> Baseline:
+        """Calcula a baseline: ambiente instalado -> grupos requeridos -> pacotes desses grupos.
+
+        `group list --installed` não basta (lista poucos grupos), por isso o caminho passa pelo
+        `environment info`.
+        """
         envs = parse_list_ids(self._out([*DNF, "environment", "list", "--installed"]))
         groups: set[str] = set()
         for env_id in envs:
@@ -218,6 +238,11 @@ class Dnf5Backend:
         )
 
     def history_user_installs(self) -> UserHistory:
+        """Lê o histórico do DNF: quais pacotes o usuário instalou, e em quais transações.
+
+        Transações de build da imagem são separadas (image_tx_ids) para não contarem como ação
+        do usuário. Transações que falharam (status != Ok) são ignoradas.
+        """
         listing = json.loads(self._out([*DNF, "history", "list", "--json"]))
         ids = [str(h["id"]) for h in listing]
         if not ids:
@@ -243,9 +268,11 @@ class Dnf5Backend:
         return frozenset(fp for fp, _ in parse_rpmkeys(self._out(["rpmkeys", "--list"])))
 
     def leaves(self) -> frozenset[str]:
+        """Pacotes folha do grafo de dependências."""
         return parse_leaves(self._out([*DNF, "leaves"]))
 
     def _owners(self, files: list[str]) -> list[str]:
+        """Pacote dono de cada .repo (uma linha por arquivo, na mesma ordem)."""
         # `rpm -qf` sai com o número de arquivos sem dono: 0 só quando todos têm dono
         res = self.run(["rpm", "-qf", *[f"{REPO_DIR}/{f}" for f in files]])
         lines = res.stdout.splitlines()
@@ -255,10 +282,17 @@ class Dnf5Backend:
         return lines
 
     def _releasever(self) -> str:
+        """Versão do Fedora (ex.: "44"), tirada da transação mais recente do histórico."""
         listing = json.loads(self._out([*DNF, "history", "list", "--json"]))
         return str(listing[0]["releasever"]) if listing else ""
 
     def repos(self, needed: set[str]) -> list[RepoSpec]:
+        """RepoSpec dos repositórios `needed`, lendo todos os .repo e seus donos.
+
+        1) lista os .repo e descobre o dono de cada um; 2) separa as seções por id e guarda só as
+        dos repos necessários; 3) se o id aparece em mais de um arquivo, escolhe um; 4) monta o
+        RepoSpec (com fingerprints extras para COPR).
+        """
         files = [f for f in self._out(["ls", "-1", REPO_DIR]).split() if f.endswith(".repo")]
         owners = self._owners(files)
         if len(owners) != len(files):
@@ -266,6 +300,7 @@ class Dnf5Backend:
         releasever = self._releasever()
         cands: dict[str, list[tuple[str | None, dict[str, str]]]] = {}
         for fname, owner_line in zip(files, owners, strict=True):
+            # "file ... is not owned by any package" = .repo sem dono
             owner = None if owner_line.startswith("file ") else _name_of_nvra(owner_line)
             for sid, opts in parse_repo_file(self._out(["cat", f"{REPO_DIR}/{fname}"])).items():
                 if sid not in needed:
@@ -289,6 +324,7 @@ class Dnf5Backend:
     def _spec(
         sid: str, owner: str | None, opts: dict[str, str], releasever: str, n: int
     ) -> RepoSpec:
+        # Aqui se decide o `kind` do repo (pelo dono do arquivo) e quais avisos ele recebe.
         warnings: list[str] = []
         if n > 1:
             warnings.append(f"duplicate_repo_id: definido em {n} arquivos; usado o primeiro")
@@ -308,6 +344,7 @@ class Dnf5Backend:
             if owner is not None:
                 package = owner
                 warnings.append(f"owned_by_package: arquivo .repo pertence a {owner}")
+        # só a 1ª baseurl; as chaves e URLs são varridas à procura de credenciais embutidas
         baseurl = opts.get("baseurl", "").split()[0] if opts.get("baseurl", "").strip() else None
         keys = tuple(opts.get("gpgkey", "").split())
         urls = [u for u in (baseurl, *keys, opts.get("metalink"), opts.get("mirrorlist")) if u]
