@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -17,6 +18,7 @@ from distro_recovery.backends.dnf5 import Dnf5Backend
 from distro_recovery.brewfile import parse_brewfile
 from distro_recovery.classify import Context, classify_all, split_repos
 from distro_recovery.decisions_template import render_decisions_template
+from distro_recovery.home_backup import check_tools, create_backup, plan_backup
 from distro_recovery.keys import fetch_key, key_fingerprints
 from distro_recovery.merge import build_vars, load_decisions
 from distro_recovery.model import Confidence
@@ -303,3 +305,52 @@ def restore(
 def doctor() -> None:
     """Diagnostica o ambiente."""
     _stub("doctor")
+
+
+@app.command("backup-home")
+def backup_home(
+    destination: Path = typer.Option(
+        ..., "--destination", "-o", help="Arquivo .tar.zst fora da origem."
+    ),
+    source: Path | None = typer.Option(None, "--source", help="Origem (padrão: sua HOME)."),
+    config: Path | None = typer.Option(None, "--config", help="YAML com lista exclude adicional."),
+    exclude: list[str] | None = typer.Option(
+        None, "--exclude", help="Padrão tar adicional; repetível."
+    ),
+    no_default_excludes: bool = typer.Option(
+        False, "--no-default-excludes", help="Inclui os caches."
+    ),
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Lista os itens processados pelo tar."
+    ),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Mostra o plano, sem criar arquivos."),
+) -> None:
+    """Arquiva a HOME com tar+zstd e verifica a integridade antes de publicar."""
+    try:
+        plan = plan_backup(
+            source if source is not None else Path.home(),
+            destination,
+            config=config,
+            excludes=tuple(exclude or ()),
+            default_excludes=not no_default_excludes,
+        )
+        check_tools()
+        typer.echo(f"origem: {plan.source}\ndestino: {plan.destination}")
+        typer.echo("exclusões: " + (", ".join(plan.excludes) or "nenhuma"))
+        if dry_run:
+            typer.echo("dry-run: somente plano; não percorre nem estima o conteúdo da HOME")
+            typer.echo(shlex.join(plan.command(plan.destination, verbose=verbose)))
+            return
+        typer.echo("criando e verificando o backup (feche aplicativos que gravam na HOME)...")
+        if not verbose:
+            typer.echo("dica: use --verbose para acompanhar os itens processados")
+        changed = create_backup(plan, verbose=verbose, report=typer.echo)
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
+        raise _fail(str(exc)) from exc
+    if changed:
+        typer.echo(
+            f"backup da HOME concluído com avisos (integridade do arquivo verificada) "
+            f"-> {plan.destination}"
+        )
+    else:
+        typer.echo(f"backup da HOME verificado -> {plan.destination}")

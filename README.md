@@ -5,6 +5,8 @@ formatar), no espírito do `brew bundle dump` / `brew bundle install`.
 
 - **`backup`** olha o sistema e anota os **aplicativos que você instalou** e os **repositórios
   externos** que eles precisam. Só lê o sistema, não altera nada.
+- **`backup-home`** arquiva sua HOME com tar + zstd, exclusões configuráveis e dry-run.
+  Veja [backup da HOME](docs/backup-home.md).
 - **`restore`** usa um playbook Ansible para recriar os repositórios (com as chaves de
   assinatura), os grupos e os pacotes.
 
@@ -39,6 +41,7 @@ Este repositório tem só código genérico. Os seus dados ficam fora dele, em
 
 - Fedora com DNF5 (o padrão desde o Fedora 41).
 - [`uv`](https://docs.astral.sh/uv/) e Python 3.11 ou mais novo.
+- Para o `backup-home`: GNU tar e zstd (não depende de Fedora/DNF5).
 - Para o `restore`: `ansible-core` e a coleção `community.general`.
 
 ```bash
@@ -107,6 +110,23 @@ repositórios é listado (com sugestão de substituto), sem derrubar a restaura�
 
 Antes de usar no seu computador de verdade, teste numa VM descartável:
 [`VM_TEST.md`](VM_TEST.md).
+
+## Backup dos arquivos da HOME
+
+```bash
+distro-recovery backup-home -o /mnt/backup/home.tar.zst --dry-run
+distro-recovery backup-home -o /mnt/backup/home.tar.zst --verbose
+```
+
+A pasta de destino deve existir e ficar fora da HOME. O comando nunca sobrescreve arquivos;
+verifica o tar e a compressão antes de publicar. Mostra as etapas da execução; com
+`--verbose` (ou `-v`), lista também os itens processados. Arquivos que mudam durante a
+leitura geram avisos e permitem concluir o backup; erros de leitura ou compressão continuam
+interrompendo a execução. Caches conhecidos e `node_modules` são
+excluídos, mantendo documentos, configurações, chaves e `.git`. As opções `--config`,
+`--exclude` e `--no-default-excludes` ajustam essa seleção.
+
+Veja [exclusões, metadados, limitações e ensaio de restauração](docs/backup-home.md).
 
 ## O `decisions.yml`
 
